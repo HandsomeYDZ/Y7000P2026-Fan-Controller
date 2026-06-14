@@ -40,6 +40,7 @@ namespace Lenovo_Fan_Controller
         private int _lastHeight = 800;
         private bool _isReinitializing = false;
         private DispatcherTimer _monitoringTimer;
+        private PowerModeListener _powerModeListener;
 
         private IntPtr _hwnd;
         private IntPtr _oldWndProc;
@@ -170,6 +171,7 @@ namespace Lenovo_Fan_Controller
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
             _monitoringTimer?.Stop();
+            _powerModeListener?.Dispose();
             if (_oldWndProc != IntPtr.Zero)
             {
                 SetWindowLongPtr(_hwnd, GWLP_WNDPROC, _oldWndProc);
@@ -899,6 +901,38 @@ namespace Lenovo_Fan_Controller
             {
                 _monitoringTimer.Start();
             }
+
+            // Stay in sync with power-mode changes made via Fn+Q. WMI events are
+            // push-based, so we keep this running even while minimized/in tray to
+            // keep the active profile and curve correct.
+            _powerModeListener = new PowerModeListener();
+            _powerModeListener.PowerModeChanged += OnExternalPowerModeChanged;
+            _powerModeListener.Start();
+        }
+
+        private void OnExternalPowerModeChanged(object sender, PowerModeHelper.LegionPowerMode mode)
+        {
+            string newProfile = PowerModeHelper.PowerModeToProfile(mode);
+
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                if (_isExiting || newProfile == currentProfile)
+                    return; // already in sync
+
+                currentProfile = newProfile;
+                SetActiveProfileButton(newProfile); // instant visual sync
+
+                // The firmware applies its own default curve when the mode
+                // changes; give it a moment to settle, then override it with
+                // the user's config for this profile. No SetPowerMode here —
+                // the change already happened externally.
+                await Task.Delay(400);
+                if (_isExiting)
+                    return;
+
+                LoadConfig(GetConfigPath(newProfile), newProfile);
+                Debug.WriteLine($"PowerModeListener: synced UI to external profile '{newProfile}'");
+            });
         }
 
         private string GetConfigPath(string profile)
