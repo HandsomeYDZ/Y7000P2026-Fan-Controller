@@ -1,5 +1,6 @@
 using H.NotifyIcon;
 using LegionFanController.Hardware;
+using Microsoft.Win32;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -172,6 +173,7 @@ namespace Lenovo_Fan_Controller
         {
             _monitoringTimer?.Stop();
             _powerModeListener?.Dispose();
+            SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;
             if (_oldWndProc != IntPtr.Zero)
             {
                 SetWindowLongPtr(_hwnd, GWLP_WNDPROC, _oldWndProc);
@@ -908,6 +910,76 @@ namespace Lenovo_Fan_Controller
             _powerModeListener = new PowerModeListener();
             _powerModeListener.PowerModeChanged += OnExternalPowerModeChanged;
             _powerModeListener.Start();
+
+            // Re-apply the active fan curve after the system wakes. Hibernate (S4)
+            // fully powers down the EC, which reverts to Lenovo's default fan table
+            // and can leave the PawnIO handle stale, so the curve must be pushed back
+            // to the EC on resume or fans stay in default mode. Guard against a double
+            // subscription if init runs again (e.g. after a PawnIO install retry).
+            SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;
+            SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;
+        }
+
+        private void OnSystemPowerModeChanged(object sender, PowerModeChangedEventArgs e)
+        {
+            if (e.Mode != PowerModes.Resume)
+                return;
+
+            // Raised on a SystemEvents background thread — marshal to the UI thread,
+            // where all EC I/O is serialized with the monitoring timer and Fn+Q sync.
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                // A sleep/hibernate cycle can leave both the EC/PawnIO handle and the
+                // Fn+Q WMI watcher dead, so re-establish the driver and push the active
+                // curve back to the EC, and re-subscribe the watcher. Retry each
+                // independently while the subsystems settle after wake.
+                bool curveApplied = false;
+                bool listenerRestarted = false;
+
+                for (int attempt = 1; attempt <= 5 && !(curveApplied && listenerRestarted); attempt++)
+                {
+                    await Task.Delay(1000);
+                    if (_isExiting)
+                        return;
+
+                    if (!curveApplied)
+                    {
+                        try
+                        {
+                            if (ECUtils.Reinit())
+                            {
+                                ApplyFanCurveToEC();
+                                curveApplied = true;
+                                Debug.WriteLine($"PowerModeChanged: re-applied fan curve after resume (attempt {attempt})");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"PowerModeChanged: resume curve re-apply attempt {attempt} failed: {ex.Message}");
+                        }
+                    }
+
+                    if (!listenerRestarted)
+                    {
+                        try
+                        {
+                            _powerModeListener?.Restart();
+                            listenerRestarted = _powerModeListener?.IsRunning ?? true;
+                            if (listenerRestarted)
+                                Debug.WriteLine($"PowerModeChanged: restarted Fn+Q listener after resume (attempt {attempt})");
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"PowerModeChanged: resume listener restart attempt {attempt} failed: {ex.Message}");
+                        }
+                    }
+                }
+
+                if (!curveApplied)
+                    Debug.WriteLine("PowerModeChanged: gave up re-applying fan curve after resume");
+                if (!listenerRestarted)
+                    Debug.WriteLine("PowerModeChanged: gave up restarting Fn+Q listener after resume");
+            });
         }
 
         private void OnExternalPowerModeChanged(object sender, PowerModeHelper.LegionPowerMode mode)

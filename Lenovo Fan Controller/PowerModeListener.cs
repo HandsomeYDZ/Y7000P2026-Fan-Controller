@@ -13,6 +13,9 @@ public sealed class PowerModeListener : IDisposable
 
     private ManagementEventWatcher _watcher;
 
+    /// <summary>True while the WMI subscription is active and delivering events.</summary>
+    public bool IsRunning => _watcher != null;
+
     /// <summary>
     /// Raised when an Fn+Q power-mode change is detected. The argument is the
     /// freshly re-read current mode (queried via WMI, not parsed from the event
@@ -54,7 +57,19 @@ public sealed class PowerModeListener : IDisposable
         }
     }
 
-    public void Dispose()
+    /// <summary>
+    /// Tears down and re-creates the WMI subscription. Use after the system
+    /// resumes from sleep/hibernate, where the event watcher can silently stop
+    /// delivering events. Check <see cref="IsRunning"/> afterwards to confirm the
+    /// subscription was re-established (WMI may not be ready immediately on wake).
+    /// </summary>
+    public void Restart()
+    {
+        Stop();
+        Start();
+    }
+
+    private void Stop()
     {
         if (_watcher == null) return;
 
@@ -68,4 +83,6 @@ public sealed class PowerModeListener : IDisposable
 
         _watcher = null;
     }
+
+    public void Dispose() => Stop();
 }

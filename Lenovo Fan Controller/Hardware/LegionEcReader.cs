@@ -165,6 +165,17 @@ namespace LegionFanController.Hardware
             _deviceHandle?.Close();
             _initialized = false;
         }
+
+        /// <summary>
+        /// Tears down the current device handle and opens a fresh one, re-loading
+        /// the module. Used after the system resumes from sleep/hibernate, where the
+        /// previously opened PawnIO handle may have been invalidated.
+        /// </summary>
+        public static bool Reinitialize()
+        {
+            Shutdown();
+            return Initialize();
+        }
     }
 
     internal static class ECUtils
@@ -178,6 +189,17 @@ namespace LegionFanController.Hardware
         {
             if (_initialized) return true;
             _initialized = PawnIODriver.Initialize();
+            return _initialized;
+        }
+
+        /// <summary>
+        /// Forces the underlying driver connection to be rebuilt, regardless of the
+        /// current initialized state. Call this on resume from sleep/hibernate before
+        /// re-applying the fan curve, since the EC and PawnIO handle may have reset.
+        /// </summary>
+        public static bool Reinit()
+        {
+            _initialized = PawnIODriver.Reinitialize();
             return _initialized;
         }
 
