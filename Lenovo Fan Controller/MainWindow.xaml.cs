@@ -1095,57 +1095,82 @@ namespace Lenovo_Fan_Controller
 
         private string ReadCurrentECConfig()
         {
-            byte[] rpmPoints = new byte[9];
-            byte[] cpuTemps = new byte[9];
-            byte[] gpuTemps = new byte[9];
+            byte[] fan1RpmPoints = new byte[9];
+            byte[] fan2RpmPoints = new byte[9];
+            byte[] cpuRampUp = new byte[10];
+            byte[] cpuRampDown = new byte[10];
+            byte[] gpuRampUp = new byte[10];
+            byte[] gpuRampDown = new byte[10];
+            byte[] hstRampUp = new byte[10];
+            byte[] hstRampDown = new byte[10];
 
             for (int i = 0; i < 9; i++)
             {
-                rpmPoints[i] = ECUtils.ReadECByte((ushort)(0xC551 + i));
-                cpuTemps[i] = ECUtils.ReadECByte((ushort)(0xC580 + i));
-                gpuTemps[i] = ECUtils.ReadECByte((ushort)(0xC5A0 + i));
+                fan1RpmPoints[i] = ECUtils.ReadECByte((ushort)(0xC551 + i));
+                fan2RpmPoints[i] = ECUtils.ReadECByte((ushort)(0xC541 + i));
             }
 
-            byte acclValue, declValue;
+            for (int i = 0; i < 10; i++)
+            {
+                cpuRampUp[i] = ECUtils.ReadECByte((ushort)(0xC580 + i));
+                cpuRampDown[i] = ECUtils.ReadECByte((ushort)(0xC591 + i));
+                gpuRampUp[i] = ECUtils.ReadECByte((ushort)(0xC5A0 + i));
+                gpuRampDown[i] = ECUtils.ReadECByte((ushort)(0xC5B1 + i));
+                hstRampUp[i] = ECUtils.ReadECByte((ushort)(0xC5C0 + i));
+                hstRampDown[i] = ECUtils.ReadECByte((ushort)(0xC5D1 + i));
+            }
 
+            byte[] acclValues;
+            byte[] declValues;
             if (legionGeneration == 5)
             {
-                acclValue = ECUtils.ReadECByte(0xC3DC);
-                declValue = ECUtils.ReadECByte(0xC3DD);
+                acclValues = new[] { ECUtils.ReadECByte(0xC3DC), ECUtils.ReadECByte(0xC3DE) };
+                declValues = new[] { ECUtils.ReadECByte(0xC3DD), ECUtils.ReadECByte(0xC3DF) };
             }
             else
             {
-                acclValue = ECUtils.ReadECByte(0xC560);
-                declValue = ECUtils.ReadECByte(0xC570);
+                acclValues = Enumerable.Range(0, 10)
+                    .Select(i => ECUtils.ReadECByte((ushort)(0xC560 + i))).ToArray();
+                declValues = Enumerable.Range(0, 10)
+                    .Select(i => ECUtils.ReadECByte((ushort)(0xC570 + i))).ToArray();
             }
 
             int pointCount = ECUtils.ReadECByte(0xC535);
-
-            // Read hysteresis from EC if available, otherwise use 3
-            int hysteresis = ECUtils.ReadECByte(0xC5FE);
-            if (hysteresis < 1 || hysteresis > 8)
+            int hysteresis = 3;
+            for (int i = 0; i < cpuRampUp.Length; i++)
             {
-                hysteresis = 3;
+                int difference = cpuRampUp[i] - cpuRampDown[i];
+                if (cpuRampUp[i] < 0x7F && cpuRampDown[i] < 0x7F &&
+                    difference >= 1 && difference <= 8)
+                {
+                    hysteresis = difference;
+                    break;
+                }
             }
 
             return $@"legion_gen : {legionGeneration}
 fan_curve_points : {pointCount}
-fan_accl_value : {acclValue}
-fan_deccl_value : {declValue}
+fan_accl_value : {acclValues[0]}
+fan_deccl_value : {declValues[0]}
+fan_accl_values : {string.Join(" ", acclValues)}
+fan_deccl_values : {string.Join(" ", declValues)}
 hysteresis : {hysteresis}
-fan_rpm_points : {string.Join(" ", rpmPoints.Select(b => (b * 100).ToString()))}
-cpu_temps_ramp_up : {string.Join(" ", cpuTemps)}
-cpu_temps_ramp_down : {string.Join(" ", cpuTemps.Select(b => Math.Max(0, b - hysteresis)))}
-gpu_temps_ramp_up : {string.Join(" ", gpuTemps)}
-gpu_temps_ramp_down : {string.Join(" ", gpuTemps.Select(b => Math.Max(0, b - hysteresis)))}
-hst_temps_ramp_up : {string.Join(" ", gpuTemps)}
-hst_temps_ramp_down : {string.Join(" ", gpuTemps.Select(b => Math.Max(0, b - hysteresis)))}";
+fan_rpm_points : {string.Join(" ", fan1RpmPoints.Select(b => (b * 100).ToString()))}
+fan2_rpm_points : {string.Join(" ", fan2RpmPoints.Select(b => (b * 100).ToString()))}
+cpu_temps_ramp_up : {string.Join(" ", cpuRampUp)}
+cpu_temps_ramp_down : {string.Join(" ", cpuRampDown)}
+gpu_temps_ramp_up : {string.Join(" ", gpuRampUp)}
+gpu_temps_ramp_down : {string.Join(" ", gpuRampDown)}
+hst_temps_ramp_up : {string.Join(" ", hstRampUp)}
+hst_temps_ramp_down : {string.Join(" ", hstRampDown)}";
         }
 
         private string GetBackupPath()
         {
             string backupDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "LegionFanController", "Backups");
-            return Path.Combine(backupDir, $"fan_config_{currentProfile}_backup.txt");
+            // Legacy backups did not include fan 2 or the real ramp-down/HST tables.
+            // Keep them untouched and create a byte-complete backup in the v2 format.
+            return Path.Combine(backupDir, $"fan_config_{currentProfile}_backup_v2.txt");
         }
 
         private void LoadConfig(string configPath, string profileName)
@@ -1185,7 +1210,12 @@ hst_temps_ramp_down : {string.Join(" ", gpuTemps.Select(b => Math.Max(0, b - hys
 
         private void LoadCurvePointsFromConfig()
         {
-            int pointCount = currentConfig.CpuTempsRampUp.Length;
+            int pointCount = new[]
+            {
+                currentConfig.FanRpmPoints.Length,
+                currentConfig.CpuTempsRampUp.Length,
+                currentConfig.GpuTempsRampUp.Length
+            }.Min();
             cpuCurvePoints.Clear();
             gpuCurvePoints.Clear();
 
@@ -1205,13 +1235,23 @@ hst_temps_ramp_down : {string.Join(" ", gpuTemps.Select(b => Math.Max(0, b - hys
 
         private FanConfig ParseConfig(string[] lines)
         {
+            int legionGen = GetConfigValue(lines, "legion_gen", 5);
+            int accelerationValue = GetConfigValue(lines, "fan_accl_value", 2);
+            int decelerationValue = GetConfigValue(lines, "fan_deccl_value", 2);
+            int[] fan1RpmPoints = GetConfigArray(lines, "fan_rpm_points", new[] { 0, 1500, 2200, 3600, 3900 });
+
             return new FanConfig
             {
-                LegionGeneration = GetConfigValue(lines, "legion_gen", 5),
+                LegionGeneration = legionGen,
                 FanCurvePoints = GetConfigValue(lines, "fan_curve_points", 5),
-                AccelerationValue = GetConfigValue(lines, "fan_accl_value", 2),
-                DecelerationValue = GetConfigValue(lines, "fan_deccl_value", 2),
-                FanRpmPoints = GetConfigArray(lines, "fan_rpm_points", new[] { 0, 1500, 2200, 3600, 3900 }),
+                AccelerationValue = accelerationValue,
+                DecelerationValue = decelerationValue,
+                FanRpmPoints = fan1RpmPoints,
+                Fan2RpmPoints = GetConfigArray(lines, "fan2_rpm_points", fan1RpmPoints),
+                FanAccelerationValues = GetConfigArray(lines, "fan_accl_values",
+                    Enumerable.Repeat(accelerationValue, legionGen == 5 ? 2 : 10).ToArray()),
+                FanDecelerationValues = GetConfigArray(lines, "fan_deccl_values",
+                    Enumerable.Repeat(decelerationValue, legionGen == 5 ? 2 : 10).ToArray()),
                 CpuTempsRampUp = GetConfigArray(lines, "cpu_temps_ramp_up", new[] { 30, 45, 55, 60, 65 }),
                 CpuTempsRampDown = GetConfigArray(lines, "cpu_temps_ramp_down", new[] { 28, 43, 53, 58, 63 }),
                 GpuTempsRampUp = GetConfigArray(lines, "gpu_temps_ramp_up", new[] { 30, 50, 55, 60, 63 }),
@@ -1268,6 +1308,9 @@ hst_temps_ramp_down : {string.Join(" ", gpuTemps.Select(b => Math.Max(0, b - hys
                 AccelerationValue = 2,
                 DecelerationValue = 2,
                 FanRpmPoints = new[] { 0, 1500, 2200, 3600, 3900 },
+                Fan2RpmPoints = new[] { 0, 1500, 2200, 3600, 3900 },
+                FanAccelerationValues = new[] { 2, 2 },
+                FanDecelerationValues = new[] { 2, 2 },
                 CpuTempsRampUp = new[] { 30, 45, 55, 60, 65 },
                 CpuTempsRampDown = new[] { 28, 43, 53, 58, 63 },
                 GpuTempsRampUp = new[] { 30, 50, 55, 60, 63 },
@@ -1311,39 +1354,44 @@ hst_temps_ramp_down : 28 48 53 63 68";
                 File.WriteAllText(backupPath, defaultContent);
             }
 
-            byte acclValue = (byte)Math.Clamp(AccVal.Value, 1, 15);
-            byte declValue = (byte)Math.Clamp(DecVal.Value, 1, 15);
+            byte[] fan1RpmPoints = currentConfig.FanRpmPoints
+                .Select(rpm => (byte)Math.Clamp(rpm / 100, 0, 255)).ToArray();
+            byte[] fan2RpmPoints = currentConfig.Fan2RpmPoints
+                .Select(rpm => (byte)Math.Clamp(rpm / 100, 0, 255)).ToArray();
+            byte[] acclValues = currentConfig.FanAccelerationValues
+                .Select(value => (byte)Math.Clamp(value, 1, 15)).ToArray();
+            byte[] declValues = currentConfig.FanDecelerationValues
+                .Select(value => (byte)Math.Clamp(value, 1, 15)).ToArray();
 
-            byte[] rpmPoints = cpuCurvePoints.Select(p => (byte)Math.Clamp(p.Rpm / 100, 0, 255)).ToArray();
+            byte[] cpuRampUp = currentConfig.CpuTempsRampUp
+                .Select(temp => (byte)Math.Clamp(temp, 0, 255)).ToArray();
+            byte[] cpuRampDown = currentConfig.CpuTempsRampDown
+                .Select(temp => (byte)Math.Clamp(temp, 0, 255)).ToArray();
 
-            byte[] cpuRampUp = cpuCurvePoints.Select(p => (byte)Math.Clamp(p.Temp, 0, 255)).ToArray();
-            byte[] cpuRampDown = cpuCurvePoints.Select(p => (byte)Math.Clamp(Math.Max(0, p.Temp - currentConfig.Hysteresis), 0, 255)).ToArray();
+            byte[] gpuRampUp = currentConfig.GpuTempsRampUp
+                .Select(temp => (byte)Math.Clamp(temp, 0, 255)).ToArray();
+            byte[] gpuRampDown = currentConfig.GpuTempsRampDown
+                .Select(temp => (byte)Math.Clamp(temp, 0, 255)).ToArray();
+            byte[] hstRampUp = currentConfig.HstTempsRampUp
+                .Select(temp => (byte)Math.Clamp(temp, 0, 255)).ToArray();
+            byte[] hstRampDown = currentConfig.HstTempsRampDown
+                .Select(temp => (byte)Math.Clamp(temp, 0, 255)).ToArray();
 
-            byte[] gpuRampUp = gpuCurvePoints.Select(p => (byte)Math.Clamp(p.Temp, 0, 255)).ToArray();
-            byte[] gpuRampDown = gpuCurvePoints.Select(p => (byte)Math.Clamp(Math.Max(0, p.Temp - currentConfig.Hysteresis), 0, 255)).ToArray();
-
-            ECWriter.WriteFanAcclDeccl(legionGeneration, acclValue, declValue);
-            ECWriter.WriteFanPointCount();
-            ECWriter.WriteFanRpmPoints(rpmPoints);
+            ECWriter.BeginFanTableUpdate();
+            ECWriter.WriteFanAcclDeccl(legionGeneration, acclValues, declValues);
+            ECWriter.WriteFanPointCount((byte)(isRestore
+                ? Math.Clamp(currentConfig.FanCurvePoints, 1, 10)
+                : 0x0A));
+            ECWriter.WriteFanRpmPoints(fan1RpmPoints, fan2RpmPoints);
             ECWriter.WriteTemperatureRamp(cpuRampUp, cpuRampDown,
                 (ushort)ECWriteRegisters.CPU_RAMP_UP, (ushort)ECWriteRegisters.CPU_RAMP_DOWN);
             ECWriter.WriteTemperatureRamp(gpuRampUp, gpuRampDown,
                 (ushort)ECWriteRegisters.GPU_RAMP_UP, (ushort)ECWriteRegisters.GPU_RAMP_DOWN);
-
-            if (isRestore)
-            {
-                byte[] hstRampUp = currentConfig.HstTempsRampUp.Select(t => (byte)Math.Clamp(t, 0, 255)).ToArray();
-                byte[] hstRampDown = currentConfig.HstTempsRampDown.Select(t => (byte)Math.Clamp(t, 0, 255)).ToArray();
-                ECWriter.WriteTemperatureRamp(hstRampUp, hstRampDown,
-                    (ushort)ECWriteRegisters.HST_RAMP_UP, (ushort)ECWriteRegisters.HST_RAMP_DOWN);
-            }
-            else
-            {
-                ECWriter.WriteTemperatureRamp(gpuRampUp, gpuRampDown,
-                    (ushort)ECWriteRegisters.HST_RAMP_UP, (ushort)ECWriteRegisters.HST_RAMP_DOWN);
-            }
+            ECWriter.WriteTemperatureRamp(hstRampUp, hstRampDown,
+                (ushort)ECWriteRegisters.HST_RAMP_UP, (ushort)ECWriteRegisters.HST_RAMP_DOWN);
 
             ECWriter.WriteStopRgbFanWake();
+            ECWriter.ResetFanCurveState();
             ECWriter.WriteFanTableChangeCounter(0x64);
         }
 
@@ -1517,8 +1565,17 @@ hst_temps_ramp_down : 28 48 53 63 68";
 
                 // Extract RPM and temps from curve points
                 currentConfig.FanRpmPoints = cpuCurvePoints.Select(p => p.Rpm).ToArray();
+                currentConfig.Fan2RpmPoints = currentConfig.FanRpmPoints.ToArray();
+                currentConfig.FanAccelerationValues = Enumerable.Repeat(currentConfig.AccelerationValue,
+                    legionGeneration == 5 ? 2 : 10).ToArray();
+                currentConfig.FanDecelerationValues = Enumerable.Repeat(currentConfig.DecelerationValue,
+                    legionGeneration == 5 ? 2 : 10).ToArray();
                 currentConfig.CpuTempsRampUp = cpuCurvePoints.Select(p => p.Temp).ToArray();
+                currentConfig.CpuTempsRampDown = cpuCurvePoints
+                    .Select(p => Math.Max(0, p.Temp - currentConfig.Hysteresis)).ToArray();
                 currentConfig.GpuTempsRampUp = gpuCurvePoints.Select(p => p.Temp).ToArray();
+                currentConfig.GpuTempsRampDown = gpuCurvePoints
+                    .Select(p => Math.Max(0, p.Temp - currentConfig.Hysteresis)).ToArray();
                 ApplyFanCurveToEC();
 
                 string configPath = GetConfigPath(currentProfile);
@@ -1599,21 +1656,22 @@ hst_temps_ramp_down : 28 43 53 63 68 73 78 83 85";
         private string GenerateConfigContent()
         {
             int h = currentConfig.Hysteresis == 0 ? 3 : currentConfig.Hysteresis;
-            int[] cpuRampDown = currentConfig.CpuTempsRampUp.Select(t => Math.Max(0, t - h)).ToArray();
-            int[] gpuRampDown = currentConfig.GpuTempsRampUp.Select(t => Math.Max(0, t - h)).ToArray();
 
             return $@"legion_gen : {legionGeneration}
 fan_curve_points : {currentConfig.FanCurvePoints}
 fan_accl_value : {currentConfig.AccelerationValue}
 fan_deccl_value : {currentConfig.DecelerationValue}
+fan_accl_values : {string.Join(" ", currentConfig.FanAccelerationValues)}
+fan_deccl_values : {string.Join(" ", currentConfig.FanDecelerationValues)}
 hysteresis : {h}
 fan_rpm_points : {string.Join(" ", currentConfig.FanRpmPoints)}
+fan2_rpm_points : {string.Join(" ", currentConfig.Fan2RpmPoints)}
 cpu_temps_ramp_up : {string.Join(" ", currentConfig.CpuTempsRampUp)}
-cpu_temps_ramp_down : {string.Join(" ", cpuRampDown)}
+cpu_temps_ramp_down : {string.Join(" ", currentConfig.CpuTempsRampDown)}
 gpu_temps_ramp_up : {string.Join(" ", currentConfig.GpuTempsRampUp)}
-gpu_temps_ramp_down : {string.Join(" ", gpuRampDown)}
-hst_temps_ramp_up : {string.Join(" ", currentConfig.GpuTempsRampUp)}
-hst_temps_ramp_down : {string.Join(" ", gpuRampDown)}";
+gpu_temps_ramp_down : {string.Join(" ", currentConfig.GpuTempsRampDown)}
+hst_temps_ramp_up : {string.Join(" ", currentConfig.HstTempsRampUp)}
+hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
         }
 
         private void UpdateDeviceSelector()

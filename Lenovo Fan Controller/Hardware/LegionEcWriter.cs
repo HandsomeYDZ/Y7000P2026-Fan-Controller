@@ -40,41 +40,36 @@ namespace LegionFanController.Hardware
             }
         }
 
-        public static void WriteFanAcclDeccl(int legionGen, byte acclValue, byte declValue)
+        public static void WriteFanAcclDeccl(int legionGen, byte[] acclValues, byte[] declValues)
         {
             if (legionGen == 5)
             {
-                WriteECByte((ushort)ECWriteRegisters.FAN1_ACC_GEN5, acclValue);
-                WriteECByte((ushort)ECWriteRegisters.FAN1_DEC_GEN5, declValue);
-                WriteECByte((ushort)ECWriteRegisters.FAN2_ACC_GEN5, acclValue);
-                WriteECByte((ushort)ECWriteRegisters.FAN2_DEC_GEN5, declValue);
+                byte fan1Accl = acclValues.Length > 0 ? acclValues[0] : (byte)2;
+                byte fan2Accl = acclValues.Length > 1 ? acclValues[1] : fan1Accl;
+                byte fan1Decl = declValues.Length > 0 ? declValues[0] : (byte)2;
+                byte fan2Decl = declValues.Length > 1 ? declValues[1] : fan1Decl;
+
+                WriteECByte((ushort)ECWriteRegisters.FAN1_ACC_GEN5, fan1Accl);
+                WriteECByte((ushort)ECWriteRegisters.FAN1_DEC_GEN5, fan1Decl);
+                WriteECByte((ushort)ECWriteRegisters.FAN2_ACC_GEN5, fan2Accl);
+                WriteECByte((ushort)ECWriteRegisters.FAN2_DEC_GEN5, fan2Decl);
             }
             else
             {
-                byte[] acclValues = Enumerable.Repeat(acclValue, 10).ToArray();
-                byte[] declValues = Enumerable.Repeat(declValue, 10).ToArray();
-                WriteECByteArray((ushort)ECWriteRegisters.FAN_ACC_GEN6, acclValues);
-                WriteECByteArray((ushort)ECWriteRegisters.FAN_DEC_GEN6, declValues);
+                WriteECByteArray((ushort)ECWriteRegisters.FAN_ACC_GEN6, PadWithLastValue(acclValues, 10, 2));
+                WriteECByteArray((ushort)ECWriteRegisters.FAN_DEC_GEN6, PadWithLastValue(declValues, 10, 2));
             }
         }
 
-        public static void WriteFanPointCount()
+        public static void WriteFanPointCount(byte pointCount)
         {
-            // Always write 0x0A (10) which gives 9 usable points
-            WriteECByte((ushort)ECWriteRegisters.FAN_POINTS_NO, 0x0A);
+            WriteECByte((ushort)ECWriteRegisters.FAN_POINTS_NO, pointCount);
         }
 
-        public static void WriteFanRpmPoints(byte[] rpmPoints)
+        public static void WriteFanRpmPoints(byte[] fan1RpmPoints, byte[] fan2RpmPoints)
         {
-            byte[] valuesToWrite = new byte[9];
-            Array.Copy(rpmPoints, valuesToWrite, Math.Min(rpmPoints.Length, 9));
-
-            byte lastValue = rpmPoints.Length > 0 ? rpmPoints[rpmPoints.Length - 1] : (byte)0;
-            for (int i = rpmPoints.Length; i < 9; i++)
-                valuesToWrite[i] = lastValue;
-
-            WriteECByteArray((ushort)ECWriteRegisters.FAN1_RPM_ST_ADDR, valuesToWrite);
-            WriteECByteArray((ushort)ECWriteRegisters.FAN2_RPM_ST_ADDR, valuesToWrite);
+            WriteECByteArray((ushort)ECWriteRegisters.FAN1_RPM_ST_ADDR, PadWithLastValue(fan1RpmPoints, 9, 0));
+            WriteECByteArray((ushort)ECWriteRegisters.FAN2_RPM_ST_ADDR, PadWithLastValue(fan2RpmPoints, 9, 0));
         }
 
         public static void WriteTemperatureRamp(byte[] rampUpValues, byte[] rampDownValues,
@@ -82,20 +77,34 @@ namespace LegionFanController.Hardware
         {
             const byte IGNORE_VALUE = 0x7F;  // Lenovo EC ignore/disable marker
 
-            // Ramp Up: fill unused slots with IGNORE_VALUE (0x7F)
-            byte[] upValues = new byte[10];
-            Array.Copy(rampUpValues, upValues, Math.Min(rampUpValues.Length, 10));
-            for (int i = rampUpValues.Length; i < 10; i++)
-                upValues[i] = IGNORE_VALUE;  // ✅ 固定用 0x7F，不是最后一个值
-            WriteECByteArray(rampUpStartAddr, upValues);
+            WriteECByteArray(rampUpStartAddr, PadValues(rampUpValues, 10, IGNORE_VALUE));
+            WriteECByteArray(rampDownStartAddr, PadValues(rampDownValues, 10, 0));
+        }
 
-            // Ramp Down: fill unused slots with the last valid value
-            byte[] downValues = new byte[10];
-            Array.Copy(rampDownValues, downValues, Math.Min(rampDownValues.Length, 10));
-            byte fillValueDown = rampDownValues.Length > 0 ? rampDownValues[rampDownValues.Length - 1] : IGNORE_VALUE;
-            for (int i = rampDownValues.Length; i < 10; i++)
-                downValues[i] = fillValueDown;
-            WriteECByteArray(rampDownStartAddr, downValues);
+        private static byte[] PadValues(byte[] values, int length, byte emptyValue)
+        {
+            byte[] result = Enumerable.Repeat(emptyValue, length).ToArray();
+            Array.Copy(values, result, Math.Min(values.Length, length));
+            return result;
+        }
+
+        private static byte[] PadWithLastValue(byte[] values, int length, byte emptyValue)
+        {
+            byte fillValue = values.Length > 0 ? values[Math.Min(values.Length, length) - 1] : emptyValue;
+            return PadValues(values, length, fillValue);
+        }
+
+        public static void BeginFanTableUpdate()
+        {
+            WriteFanTableChangeCounter(0);
+        }
+
+        public static void ResetFanCurveState()
+        {
+            WriteECByte((ushort)ECWriteRegisters.FAN_CUR_POINT, 0);
+            WriteECByte((ushort)ECWriteRegisters.CPU_FAN_LEVEL, 0);
+            WriteECByte((ushort)ECWriteRegisters.GPU_FAN_LEVEL, 0);
+            WriteECByte((ushort)ECWriteRegisters.HST_FAN_LEVEL, 0);
         }
 
         public static void WriteStopRgbFanWake()
@@ -141,5 +150,9 @@ namespace LegionFanController.Hardware
         STOP_RGB_FAN_WAKE = 0xC64D,
         FAN_TABLE_CHG_COUNTER = 0xC5FE,
         FAN_TABLE_CHG_COUNTER_SEC = 0xC5FF,
+        FAN_CUR_POINT = 0xC534,
+        CPU_FAN_LEVEL = 0xC634,
+        GPU_FAN_LEVEL = 0xC635,
+        HST_FAN_LEVEL = 0xC636,
     }
 }
