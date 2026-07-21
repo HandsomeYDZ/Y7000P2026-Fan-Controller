@@ -7,6 +7,9 @@
         public int AccelerationValue { get; set; }
         public int DecelerationValue { get; set; }
         public int[] FanRpmPoints { get; set; }
+        public int[] Fan2RpmPoints { get; set; }
+        public int[] FanAccelerationValues { get; set; }
+        public int[] FanDecelerationValues { get; set; }
         public int[] CpuTempsRampUp { get; set; }
         public int[] CpuTempsRampDown { get; set; }
         public int[] GpuTempsRampUp { get; set; }

@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Management;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Listens for power-mode changes made via Fn+Q by subscribing to Lenovo's WMI
@@ -43,12 +44,13 @@ public sealed class PowerModeListener : IDisposable
         }
     }
 
-    private void OnEventArrived(object sender, EventArrivedEventArgs e)
+    private async void OnEventArrived(object sender, EventArrivedEventArgs e)
     {
         // Use the event purely as a trigger and read the authoritative value back,
         // so we don't depend on the generation-specific event payload layout.
         try
         {
+            await Task.Delay(250);
             PowerModeChanged?.Invoke(this, PowerModeHelper.GetCurrentPowerMode());
         }
         catch (Exception ex)
