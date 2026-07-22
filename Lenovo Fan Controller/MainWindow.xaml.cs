@@ -1764,8 +1764,9 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
         private void DrawGrid(double graphWidth, double graphHeight)
         {
             // Use theme-aware grid color
-            var gridBrush = Application.Current.Resources["CardStrokeColorDefaultBrush"] as SolidColorBrush ??
-                            new SolidColorBrush(Windows.UI.Color.FromArgb(40, 255, 255, 255));
+            var gridBrush = Application.Current.Resources["CardStrokeColorDefaultBrush"] as Brush ??
+                            Application.Current.Resources["DividerStrokeColorDefaultBrush"] as Brush ??
+                            new SolidColorBrush(Microsoft.UI.Colors.Gray);
 
             // Vertical grid lines (temperature)
             for (int temp = MIN_TEMP; temp <= MAX_TEMP; temp += 10)
@@ -1805,10 +1806,10 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
         private void DrawAxes(double graphWidth, double graphHeight)
         {
             // Use theme-aware colors
-            var axisBrush = Application.Current.Resources["TextFillColorPrimaryBrush"] as SolidColorBrush ??
-                            new SolidColorBrush(Colors.White);
-            var textBrush = Application.Current.Resources["TextFillColorSecondaryBrush"] as SolidColorBrush ??
-                            new SolidColorBrush(Windows.UI.Color.FromArgb(180, 255, 255, 255));
+            var axisBrush = Application.Current.Resources["TextFillColorPrimaryBrush"] as Brush ??
+                            new SolidColorBrush(Microsoft.UI.Colors.Gray);
+            var textBrush = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush ??
+                            new SolidColorBrush(Microsoft.UI.Colors.Gray);
 
             // X-axis
             var xAxis = new Line
@@ -2064,8 +2065,11 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
             FanCurveCanvas.Children.Add(curvePath);
 
             // Draw points on top
-            var whiteBrush = Application.Current.Resources["TextFillColorPrimaryBrush"] as SolidColorBrush ??
-                            new SolidColorBrush(Colors.White);
+            var pointStrokeBrush = Application.Current.Resources["CardBackgroundFillColorDefaultBrush"] as Brush ??
+                                   Application.Current.Resources["ApplicationPageBackgroundThemeBrush"] as Brush ??
+                                   new SolidColorBrush(Microsoft.UI.Colors.Gray);
+            var labelForeground = Application.Current.Resources["TextFillColorPrimaryBrush"] as Brush ??
+                                  new SolidColorBrush(Microsoft.UI.Colors.Gray);
 
             for (int i = 0; i < points.Count; i++)
             {
@@ -2078,7 +2082,7 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
                     Width = 20,
                     Height = 20,
                     Fill = pointBrush,
-                    Stroke = whiteBrush,
+                    Stroke = pointStrokeBrush,
                     StrokeThickness = 2,
                     Tag = new PointTag { Point = point, IsCpu = curveType == "cpu" }
                 };
@@ -2092,7 +2096,7 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
                 {
                     Text = $"{point.Temp}°C",
                     FontSize = 10,
-                    Foreground = whiteBrush,
+                    Foreground = labelForeground,
                     Opacity = 0.9,
                     FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
                 };
@@ -2105,7 +2109,7 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
                 {
                     Text = $"{point.Rpm}",
                     FontSize = 10,
-                    Foreground = whiteBrush,
+                    Foreground = labelForeground,
                     Opacity = 0.85
                 };
                 Canvas.SetLeft(rpmLabel, pos.X - 15);
