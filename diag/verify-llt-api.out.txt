@@ -1,0 +1,77 @@
+﻿=== LLT V5 WMI API verification on LAPTOP-4P5RG84B ===
+LENOVO_OTHER_METHOD accessible. Methods:
+  GetDataByCommand
+  GetDataByPackage
+  GetFeatureValue
+  SetFeatureValue
+
+--- Sampling every 2s for 30s (values from GetFeatureValue) ---
+[0] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=45 PCH temperature=42 
+[1] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=45 PCH temperature=43 
+[2] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=53 GPU temperature=46 PCH temperature=43 
+[3] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=53 GPU temperature=46 PCH temperature=42 
+[4] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=46 PCH temperature=42 
+[5] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=46 PCH temperature=42 
+[6] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=46 PCH temperature=43 
+[7] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=0 PCH temperature=42 
+[8] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=0 PCH temperature=43 
+[9] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=0 PCH temperature=42 
+[10] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=53 GPU temperature=0 PCH temperature=43 
+[11] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=53 GPU temperature=0 PCH temperature=43 
+[12] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=0 PCH temperature=42 
+[13] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=0 PCH temperature=43 
+[14] CPU fan speed=1900 GPU fan speed=1900 PCH fan speed=0 CPU temperature=54 GPU temperature=0 PCH temperature=43 
+
+--- LENOVO_FAN_TABLE_DATA instances ---
+FanId=1 SensorId=1 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 37,41,44,47,127,127,127,127,127,127
+FanId=2 SensorId=5 Active=True
+    speeds: 1700,1900,2100,2100,2600,3200,3400,3800,4300,5100
+    temps : 53,53,53,53,53,53,56,59,65,77
+FanId=1 SensorId=4 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 65,65,65,65,65,68,71,75,80,90
+FanId=1 SensorId=1 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 37,41,44,47,127,127,127,127,127,127
+FanId=2 SensorId=5 Active=True
+    speeds: 1700,1900,2100,2100,2600,3200,3400,3800,4300,5100
+    temps : 53,53,53,53,53,53,56,59,65,77
+FanId=1 SensorId=4 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 65,65,65,65,65,68,71,75,80,90
+FanId=1 SensorId=1 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 37,41,44,47,127,127,127,127,127,127
+FanId=2 SensorId=5 Active=True
+    speeds: 1700,1900,2100,2100,2600,3200,3400,3800,4300,5100
+    temps : 53,53,53,53,53,53,56,59,65,77
+FanId=1 SensorId=4 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 65,65,65,65,65,68,71,75,80,90
+FanId=1 SensorId=1 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 37,41,44,47,127,127,127,127,127,127
+FanId=2 SensorId=5 Active=True
+    speeds: 1700,1900,2100,2100,2600,3200,3400,3800,4300,5100
+    temps : 53,53,53,53,53,53,56,59,65,77
+FanId=1 SensorId=4 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 65,65,65,65,65,68,71,75,80,90
+FanId=1 SensorId=1 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 37,41,44,47,127,127,127,127,127,127
+FanId=2 SensorId=5 Active=True
+    speeds: 1700,1900,2100,2100,2600,3200,3400,3800,4300,5100
+    temps : 53,53,53,53,53,53,56,59,65,77
+FanId=1 SensorId=4 Active=True
+    speeds: 1700,1900,2100,2400,2400,3200,3400,3800,4300,5100
+    temps : 65,65,65,65,65,68,71,75,80,90
+
+--- LENOVO_FAN_METHOD.Fan_Get_Table(fan, sensor) ---
+Fan_Get_Table(1,1) -> FanTable=30 45 55 60 65 70 75 80 85 127; FanTableSize=10; SensorTable=0 0 0 0 0 0 0 0 0 0; SensorTableSize=10
+Fan_Get_Table(2,5) -> FanTable=30 45 55 60 65 70 75 80 85 127; FanTableSize=10; SensorTable=0 0 0 0 0 0 0 0 0 0; SensorTableSize=10
+Fan_Get_Table(4,4) -> FanTable=30 45 55 60 65 70 75 80 85 127; FanTableSize=10; SensorTable=0 0 0 0 0 0 0 0 0 0; SensorTableSize=10
+Fan_Get_Table(1,5) -> FanTable=30 45 55 60 65 70 75 80 85 127; FanTableSize=10; SensorTable=0 0 0 0 0 0 0 0 0 0; SensorTableSize=10
+Fan_Get_Table(2,1) -> FanTable=30 45 55 60 65 70 75 80 85 127; FanTableSize=10; SensorTable=0 0 0 0 0 0 0 0 0 0; SensorTableSize=10

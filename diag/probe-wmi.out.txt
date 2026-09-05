@@ -1,0 +1,38 @@
+=== WMI Probe on LAPTOP-4P5RG84B ===
+
+LENOVO_FAN_METHOD methods:
+  Fan_Get_Table
+  Fan_Set_Table
+
+--- Current fan speeds (Fan_GetCurrentFanSpeed) ---
+Fan 0 ERROR: You cannot call a method on a null-valued expression.
+Fan 1 ERROR: You cannot call a method on a null-valued expression.
+Fan 2 ERROR: You cannot call a method on a null-valued expression.
+Fan 3 ERROR: You cannot call a method on a null-valued expression.
+
+--- Sensor temps (Fan_GetCurrentSensorTemperature) ---
+Sensor 0 ERROR: You cannot call a method on a null-valued expression.
+Sensor 1 ERROR: You cannot call a method on a null-valued expression.
+Sensor 2 ERROR: You cannot call a method on a null-valued expression.
+Sensor 3 ERROR: You cannot call a method on a null-valued expression.
+Sensor 4 ERROR: You cannot call a method on a null-valued expression.
+Sensor 5 ERROR: You cannot call a method on a null-valued expression.
+Sensor 6 ERROR: You cannot call a method on a null-valued expression.
+Sensor 7 ERROR: You cannot call a method on a null-valued expression.
+
+--- Fan_Get_MaxSpeed ---
+Fan 0 MaxSpeed ERROR: You cannot call a method on a null-valued expression.
+Fan 1 MaxSpeed ERROR: You cannot call a method on a null-valued expression.
+
+--- Fan_Get_FullSpeed ---
+FullSpeed ERROR: You cannot call a method on a null-valued expression.
+
+--- LENOVO_FAN_TABLE_DATA instances ---
+Instance: ACPI\PNP0C14\GMZN_0
+Table data ERROR: The property 'Properties' cannot be found on this object. Verify that the property exists.
+
+--- LENOVO_FAN_MAX_SPEED_DATA ---
+
+--- Power mode (LENOVO_GAMEZONE_DATA.GetSmartFanMode) ---
+Gamezone ERROR: You cannot call a method on a null-valued expression.
+

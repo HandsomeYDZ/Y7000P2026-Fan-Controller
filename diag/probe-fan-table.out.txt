@@ -1,0 +1,328 @@
+﻿=== Fan table WMI probe on LAPTOP-4P5RG84B ===
+--- Current SmartFanMode ---
+  Data = 2
+
+--- LENOVO_FAN_TABLE_DATA (all instances, all properties) ---
+[instance 0]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 7
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_0
+  MaxSensorTemperature = 127
+  MinSensorTemperature = 37
+  Mode = 1
+  Reserved = 0
+  Sensor_ID = 1
+  SensorTable_Data = [37, 41, 44, 47, 127, 127, 127, 127, 127, 127]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 1]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 7
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 2
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2100, 2600, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_1
+  MaxSensorTemperature = 77
+  MinSensorTemperature = 53
+  Mode = 1
+  Reserved = 0
+  Sensor_ID = 5
+  SensorTable_Data = [53, 53, 53, 53, 53, 53, 56, 59, 65, 77]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 2]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 7
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_2
+  MaxSensorTemperature = 90
+  MinSensorTemperature = 65
+  Mode = 1
+  Reserved = 0
+  Sensor_ID = 4
+  SensorTable_Data = [65, 65, 65, 65, 65, 68, 71, 75, 80, 90]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 3]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 9
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_3
+  MaxSensorTemperature = 127
+  MinSensorTemperature = 37
+  Mode = 3
+  Reserved = 0
+  Sensor_ID = 1
+  SensorTable_Data = [37, 41, 44, 47, 127, 127, 127, 127, 127, 127]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 4]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 9
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 2
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2100, 2600, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_4
+  MaxSensorTemperature = 77
+  MinSensorTemperature = 53
+  Mode = 3
+  Reserved = 0
+  Sensor_ID = 5
+  SensorTable_Data = [53, 53, 53, 53, 53, 53, 56, 59, 65, 77]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 5]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 9
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_5
+  MaxSensorTemperature = 90
+  MinSensorTemperature = 65
+  Mode = 3
+  Reserved = 0
+  Sensor_ID = 4
+  SensorTable_Data = [65, 65, 65, 65, 65, 68, 71, 75, 80, 90]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 6]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 8
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_6
+  MaxSensorTemperature = 127
+  MinSensorTemperature = 37
+  Mode = 2
+  Reserved = 0
+  Sensor_ID = 1
+  SensorTable_Data = [37, 41, 44, 47, 127, 127, 127, 127, 127, 127]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 7]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 8
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 2
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2100, 2600, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_7
+  MaxSensorTemperature = 77
+  MinSensorTemperature = 53
+  Mode = 2
+  Reserved = 0
+  Sensor_ID = 5
+  SensorTable_Data = [53, 53, 53, 53, 53, 53, 56, 59, 65, 77]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 8]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 8
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_8
+  MaxSensorTemperature = 90
+  MinSensorTemperature = 65
+  Mode = 2
+  Reserved = 0
+  Sensor_ID = 4
+  SensorTable_Data = [65, 65, 65, 65, 65, 68, 71, 75, 80, 90]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 9]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 8
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_9
+  MaxSensorTemperature = 127
+  MinSensorTemperature = 37
+  Mode = 255
+  Reserved = 0
+  Sensor_ID = 1
+  SensorTable_Data = [37, 41, 44, 47, 127, 127, 127, 127, 127, 127]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 10]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 8
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 2
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2100, 2600, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_10
+  MaxSensorTemperature = 77
+  MinSensorTemperature = 53
+  Mode = 255
+  Reserved = 0
+  Sensor_ID = 5
+  SensorTable_Data = [53, 53, 53, 53, 53, 53, 56, 59, 65, 77]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 11]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 8
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_11
+  MaxSensorTemperature = 90
+  MinSensorTemperature = 65
+  Mode = 255
+  Reserved = 0
+  Sensor_ID = 4
+  SensorTable_Data = [65, 65, 65, 65, 65, 68, 71, 75, 80, 90]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 12]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 10
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_12
+  MaxSensorTemperature = 127
+  MinSensorTemperature = 37
+  Mode = 224
+  Reserved = 0
+  Sensor_ID = 1
+  SensorTable_Data = [37, 41, 44, 47, 127, 127, 127, 127, 127, 127]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 13]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 10
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 2
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2100, 2600, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_13
+  MaxSensorTemperature = 77
+  MinSensorTemperature = 53
+  Mode = 224
+  Reserved = 0
+  Sensor_ID = 5
+  SensorTable_Data = [53, 53, 53, 53, 53, 53, 56, 59, 65, 77]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+[instance 14]
+  Active = True
+  CurrentFanMaxSpeed = 5100
+  CurrentFanMinSpeed = 1700
+  DesignMaxFanSpeedNumber = 10
+  EndOnlyUpwardAdjustNumber = 10
+  Fan_Id = 1
+  FanSpeedStep = 0
+  FanTable_Data = [1700, 1900, 2100, 2400, 2400, 3200, 3400, 3800, 4300, 5100]
+  FanTable_Len = 10
+  InstanceName = ACPI\PNP0C14\GMZN_14
+  MaxSensorTemperature = 90
+  MinSensorTemperature = 65
+  Mode = 224
+  Reserved = 0
+  Sensor_ID = 4
+  SensorTable_Data = [65, 65, 65, 65, 65, 68, 71, 75, 80, 90]
+  SensorTable_Len = 10
+  SensorTemperatureStep = 0
+  StartOnlyUpwardAdjustNumber = 0
+
+--- LENOVO_FAN_METHOD.Fan_Get_Table combos ---
+Fan_Get_Table(0,0) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(0,1) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(0,3) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(0,4) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(0,5) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(1,0) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(1,1) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(1,3) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(1,4) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(1,5) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(2,0) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(2,1) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(2,3) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(2,4) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+Fan_Get_Table(2,5) -> FanTable=[30, 45, 55, 60, 65, 127, 127, 127, 127, 127] FanTableSize=10 SensorTable=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] SensorTableSize=10
+
+--- Current fan speeds / temps (GetFeatureValue) ---
+ID 0x04030001 = 1900
+ID 0x04030002 = 1900
+ID 0x05040000 = 54
+ID 0x05050000 = 45

@@ -252,7 +252,9 @@ namespace LegionFanController.Hardware
 
         private static int SanitizeRpm(ushort rpm)
         {
-            if (rpm == 0x0000 || rpm == 0xFFFF || rpm > 20000)
+            // No real Legion fan spins above ~8000 RPM; anything beyond 12000 is
+            // definitely not a tachometer value (old bug showed 16743/18045).
+            if (rpm == 0x0000 || rpm == 0xFFFF || rpm > 12000)
                 return 0;
             return rpm;
         }
@@ -276,12 +278,35 @@ namespace LegionFanController.Hardware
             return ReadECByte((ushort)ECRegister.VRM_TEMP);
         }
 
+        /// <summary>
+        /// Reads the EC chip ID (0x2000/0x2001). Known parts:
+        ///   0x5570/0x5571 -> ITE 5570 (Legion Gen 5)
+        ///   0x8226/0x8227 -> ITE 8227 (Legion Gen 6)
+        ///   Anything else (e.g. 0x5508 on newer models like the Y7000P 2026) is a
+        ///   newer EC whose RAM layout differs — the legacy sensor registers must
+        ///   NOT be trusted on those chips.
+        /// </summary>
+        public static ushort GetChipId()
+        {
+            byte idLow = ECUtils.ReadECByte(0x2000);
+            byte idHigh = ECUtils.ReadECByte(0x2001);
+            return (ushort)((idLow << 8) | idHigh);
+        }
+
+        /// <summary>
+        /// True when the EC chip is a known Gen 5/6 part whose RAM layout matches
+        /// the legacy sensor register map (0xC538/0xC539/0xC5E0-0xC5E3).
+        /// </summary>
+        public static bool IsLegacyGen56Chip()
+        {
+            ushort chipId = GetChipId();
+            return chipId is 0x5570 or 0x5571 or 0x8226 or 0x8227;
+        }
+
         public static int DetectLegionGen()
         {
             // Method 1: Read EC chip ID (read-only, no risk)
-            byte idLow = ECUtils.ReadECByte(0x2000);
-            byte idHigh = ECUtils.ReadECByte(0x2001);
-            ushort chipId = (ushort)((idLow << 8) | idHigh);
+            ushort chipId = GetChipId();
 
             Debug.WriteLine($"EC chip ID: 0x{chipId:X4}");
 
@@ -296,53 +321,21 @@ namespace LegionFanController.Hardware
                     Debug.WriteLine("Detected Gen6 by chip ID");
                     return 6;
                 default:
-                    Debug.WriteLine($"Unknown chip ID: 0x{chipId:X4}, falling back to register test");
-                    break;
+                    // Newer EC (e.g. ITE 5508 on the Y7000P 2026). The legacy
+                    // Gen 5/6 register map does not apply; sensor values must be
+                    // read via WMI (LENOVO_OTHER_METHOD.GetFeatureValue).
+                    // Return 0 = "modern platform, generation unknown" instead of
+                    // guessing and risking writes to wrong registers.
+                    Debug.WriteLine($"Unknown/new EC chip 0x{chipId:X4}: modern platform, sensor reads must use WMI");
+                    return 0;
             }
-
-            // Method 2: Test registers (fallback for unknown chips)
-            return DetectLegionGenByRegisters();
         }
 
         private static int DetectLegionGenByRegisters()
         {
-            // Read Gen5 registers
-            byte fan1AccGen5 = ECUtils.ReadECByte(0xC3DC);
-            byte fan1DecGen5 = ECUtils.ReadECByte(0xC3DD);
-            byte fan2AccGen5 = ECUtils.ReadECByte(0xC3DE);
-            byte fan2DecGen5 = ECUtils.ReadECByte(0xC3DF);
-
-            // Read Gen6 registers (first byte of each table)
-            byte fanAccGen6 = ECUtils.ReadECByte(0xC560);
-            byte fanDecGen6 = ECUtils.ReadECByte(0xC570);
-
-            // Check if registers are valid (not 0xFF)
-            bool hasGen5 = (fan1AccGen5 != 0xFF && fan1AccGen5 != 0x00) ||
-                           (fan1DecGen5 != 0xFF && fan1DecGen5 != 0x00) ||
-                           (fan2AccGen5 != 0xFF && fan2AccGen5 != 0x00) ||
-                           (fan2DecGen5 != 0xFF && fan2DecGen5 != 0x00);
-
-            bool hasGen6 = (fanAccGen6 != 0xFF && fanAccGen6 != 0x00) &&
-                           (fanDecGen6 != 0xFF && fanDecGen6 != 0x00);
-
-            Debug.WriteLine($"Gen5 register test: {(hasGen5 ? "valid" : "invalid")}");
-            Debug.WriteLine($"Gen6 register test: {(hasGen6 ? "valid" : "invalid")}");
-
-            if (hasGen6 && !hasGen5)
-            {
-                Debug.WriteLine("Detected Gen6 by register test");
-                return 6;
-            }
-
-            if (hasGen5 && !hasGen6)
-            {
-                Debug.WriteLine("Detected Gen5 by register test");
-                return 5;
-            }
-
-            // Both exist or both invalid - default to Gen5
-            Debug.WriteLine("Register test ambiguous, defaulting to Gen5");
-            return 5;
+            // Legacy fallback retained for documentation only; DetectLegionGen()
+            // now decides purely by chip ID and returns 0 for unknown platforms.
+            return 0;
         }
     }
 

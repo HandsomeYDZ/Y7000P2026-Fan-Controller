@@ -848,6 +848,26 @@ namespace Lenovo_Fan_Controller
 
             legionGeneration = SettingsManager.LegionGeneration;
 
+            // The EC chip tells us whether the Gen 5/6 register map applies at all.
+            // On newer platforms (e.g. Y7000P 2026, ITE 5508) a stale registry
+            // value of 5/6 from older versions must not be trusted: sensor reads
+            // go through WMI and the Gen 5/6 ACC/DEC registers must not be written.
+            if (!ECUtils.IsLegacyGen56Chip())
+            {
+                if (legionGeneration != 0)
+                {
+                    Debug.WriteLine($"EC chip is not a known Gen5/6 part — forcing legionGeneration 5/6 -> 0 (modern platform)");
+                    legionGeneration = 0;
+                    SettingsManager.LegionGeneration = 0;
+                }
+            }
+            else if (legionGeneration == 0)
+            {
+                // Legacy chip but no cached generation — re-detect.
+                legionGeneration = ECUtils.DetectLegionGen();
+                SettingsManager.LegionGeneration = legionGeneration;
+            }
+
             CreateSuggestedConfigsIfMissing();
             try
             {
@@ -878,23 +898,34 @@ namespace Lenovo_Fan_Controller
 
             _monitoringTimer = new DispatcherTimer();
             _monitoringTimer.Interval = TimeSpan.FromSeconds(1);
-            _monitoringTimer.Tick += (s, e) =>
+            bool monitoringInProgress = false;
+            _monitoringTimer.Tick += async (s, e) =>
             {
+                // WMI sensor reads block for a few ms each — keep them off the UI
+                // thread and guard against overlapping ticks.
+                if (monitoringInProgress)
+                    return;
+                monitoringInProgress = true;
                 try
                 {
-                    int cpuTemp = ECUtils.ReadCpuTemp();
-                    int gpuTemp = ECUtils.ReadGpuTemp();
-                    int cpuFan = ECUtils.ReadFan1Rpm();
-                    int gpuFan = ECUtils.ReadFan2Rpm();
+                    (int cpuTemp, int gpuTemp, int cpuFan, int gpuFan) = await Task.Run(() =>
+                        (LegionSensors.ReadCpuTemp(), LegionSensors.ReadGpuTemp(),
+                         LegionSensors.ReadFan1Rpm(), LegionSensors.ReadFan2Rpm()));
 
-                    MonitorCpuTemp.Text = $"{cpuTemp} °C";
-                    MonitorGpuTemp.Text = $"{gpuTemp} °C";
-                    MonitorCpuFan.Text = $"{cpuFan} RPM";
-                    MonitorGpuFan.Text = $"{gpuFan} RPM";
+                    // -1 means "sensor unavailable" (e.g. dGPU asleep -> WMI
+                    // reports no GPU temperature). Show N/A instead of a fake 0.
+                    MonitorCpuTemp.Text = cpuTemp >= 0 ? $"{cpuTemp} °C" : "N/A";
+                    MonitorGpuTemp.Text = gpuTemp >= 0 ? $"{gpuTemp} °C" : "N/A";
+                    MonitorCpuFan.Text = cpuFan >= 0 ? $"{cpuFan} RPM" : "N/A";
+                    MonitorGpuFan.Text = gpuFan >= 0 ? $"{gpuFan} RPM" : "N/A";
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Monitoring Tick Error: {ex.Message}");
+                }
+                finally
+                {
+                    monitoringInProgress = false;
                 }
             };
             if (_appWindow.Presenter is OverlappedPresenter presenter &&
@@ -1182,9 +1213,16 @@ hst_temps_ramp_down : {string.Join(" ", hstRampDown)}";
 
                 if (!File.Exists(configPath))
                 {
-                    string defaultContent = ReadCurrentECConfig();
+                    // Use a clean built-in default curve instead of reading the
+                    // EC back. Reading the EC here produced garbage on platforms
+                    // where the Gen 5/6 register map does not apply (e.g. the
+                    // Y7000P 2026: fan_rpm_points like "0 0 100 0 0 0 0 5700 0"),
+                    // and re-applying that garbage corrupted the EC fan tables.
+                    // Applying the clean default also repairs an already
+                    // corrupted RPM table.
+                    string defaultContent = GetDefaultConfigContent();
                     lines = defaultContent.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-                    needApply = false;
+                    needApply = true;
                 }
                 else
                 {
@@ -1194,6 +1232,20 @@ hst_temps_ramp_down : {string.Join(" ", hstRampDown)}";
                 }
 
                 currentConfig = ParseConfig(lines);
+
+                // Guard against previously corrupted configs (created by older
+                // builds that read wrong EC addresses): if the RPM curve is not
+                // a sane monotonic sequence, fall back to the clean default so
+                // the editor never shows nonsense like a 0 RPM point in the
+                // middle of the curve.
+                if (!IsSaneFanConfig(currentConfig))
+                {
+                    Debug.WriteLine("LoadConfig: config curve invalid (legacy corruption), using clean default");
+                    currentConfig = ParseConfig(GetDefaultConfigContent()
+                        .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries));
+                    needApply = true;
+                }
+
                 LoadCurvePointsFromConfig();
                 UpdateDeviceSelector();
                 if (needApply)
@@ -1206,6 +1258,34 @@ hst_temps_ramp_down : {string.Join(" ", hstRampDown)}";
                 //InitializeCurvePoints(5);
                 //UpdateDeviceSelector();
             }
+        }
+
+        /// <summary>
+        /// Checks that the parsed fan curve looks like a real curve: ascending
+        /// temperature points, ascending RPM points and no zero RPM point
+        /// sandwiched between non-zero points (the signature of legacy
+        /// corrupted configs).
+        /// </summary>
+        private static bool IsSaneFanConfig(FanConfig config)
+        {
+            if (config.CpuTempsRampUp == null || config.FanRpmPoints == null)
+                return false;
+            if (config.CpuTempsRampUp.Length < 2 || config.FanRpmPoints.Length < 2)
+                return false;
+
+            for (int i = 1; i < config.CpuTempsRampUp.Length; i++)
+                if (config.CpuTempsRampUp[i] <= config.CpuTempsRampUp[i - 1])
+                    return false;
+
+            for (int i = 1; i < config.FanRpmPoints.Length; i++)
+            {
+                if (config.FanRpmPoints[i] < config.FanRpmPoints[i - 1])
+                    return false;
+                if (config.FanRpmPoints[i] == 0 && config.FanRpmPoints[i - 1] > 0)
+                    return false; // zero after a non-zero point = corrupted
+            }
+
+            return true;
         }
 
         private void LoadCurvePointsFromConfig()
@@ -1378,7 +1458,16 @@ hst_temps_ramp_down : 28 48 53 63 68";
                 .Select(temp => (byte)Math.Clamp(temp, 0, 255)).ToArray();
 
             ECWriter.BeginFanTableUpdate();
-            ECWriter.WriteFanAcclDeccl(legionGeneration, acclValues, declValues);
+
+            // The Gen 5/6 ACC/DEC registers only exist on those EC chips. On newer
+            // platforms (e.g. Y7000P 2026, ITE 5508) that RAM region holds live EC
+            // data — writing there corrupts unrelated state, so skip it and keep
+            // the firmware's own ramp speeds.
+            if (legionGeneration == 5 || legionGeneration == 6)
+            {
+                ECWriter.WriteFanAcclDeccl(legionGeneration, acclValues, declValues);
+            }
+
             ECWriter.WriteFanPointCount((byte)(isRestore
                 ? Math.Clamp(currentConfig.FanCurvePoints, 1, 10)
                 : 0x0A));

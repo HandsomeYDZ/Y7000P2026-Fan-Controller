@@ -37,7 +37,10 @@ namespace Lenovo_Fan_Controller
                 try
                 {
                     using var regKey = Registry.CurrentUser.OpenSubKey(RegistryKeyPath);
-                    if (regKey?.GetValue(LegionGenKey) is int value && (value == 5 || value == 6))
+                    // 5 = Gen5, 6 = Gen6, 0 = modern platform with an unknown/new EC
+                    // (e.g. Y7000P 2026). Cache all three to avoid re-detecting on
+                    // every access.
+                    if (regKey?.GetValue(LegionGenKey) is int value && (value == 0 || value == 5 || value == 6))
                     {
                         return value;
                     }
