@@ -364,3 +364,9 @@ FodyWeavers.xsd
 
 # Custom
 wip/
+
+# Local firmware copies, tools and transient hardware-test/session data.
+diag/acpi/
+diag/normal-rpm-test-*/
+diag/gui-preview.png
+diag/gui-inspection.json

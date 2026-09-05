@@ -1,5 +1,13 @@
 # Lenovo Legion 5/6 Fan Controller
 
+## Y7000P 2026（83F3 / Q6CN79WW）适配分支
+
+本分支新增普通模式的 WMI 目标 RPM 控制，不需要切到 Custom。**均衡模式已实测：1900 → 2600 RPM，模式保持不变，随后恢复自动。** 静音、性能模式已接入同一实现，但尚未进行硬件实测；长期运行和 GUI 人工验证也仍待完成。
+
+在本机上不使用 PawnIO 或旧 EC 地址。以管理员运行本分支构建出的程序；退出 LLT、LenovoTray 等其他风扇/模式控制应用后，在需要的模式下编辑并 **Save Profile**，然后点 **Enable curves**。启动默认不接管。**Restore auto** 可停止控制。保存配置或在界面内切换模式会停止会话，需要重新启用；Fn+Q 切换会选用已保存的对应曲线。曲线只能在程序和辅助进程运行时生效。
+
+目标范围为 1700–5300 RPM，CPU/GPU/PCH 共同决定两风扇需求。已加入固定温度保护、独立心跳、退出恢复与冲突应用检测。旧配置与新 WMI 配置使用不同文件，旧 EC 写测试已停用。完整依据、实测记录与限制见 [普通模式核查报告](diag/NORMAL-MODE-FINDINGS.md)。下面的上游说明和驱动要求主要适用于旧 Gen5/6，不代表本机适配路径。
+
 ![Stable Release](https://img.shields.io/github/v/release/Kangarroar/Legion-5-6-Fan-Controller?style=flat-square\&label=Stable)
 ![Pre-release](https://img.shields.io/github/v/release/Kangarroar/Legion-5-6-Fan-Controller?include_prereleases\&style=flat-square\&label=Pre-release)
 ![License](https://img.shields.io/github/license/Kangarroar/Legion-5-6-Fan-Controller?style=flat-square)

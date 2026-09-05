@@ -13,7 +13,8 @@ namespace LegionFanController.Hardware
 
         public static void WriteECByte(ushort addr, byte value)
         {
-            lock (typeof(ECWriter))
+            HardwareAccessPolicy.RequireLegacyWriteAccess();
+            lock (ECUtils.IoLock)
             {
                 PawnIODriver.WriteIoPortByte(EC_ADDR_PORT, 0x2E);
                 PawnIODriver.WriteIoPortByte(EC_DATA_PORT, 0x11);

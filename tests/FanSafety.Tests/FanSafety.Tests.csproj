@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="9.0.0" />
+    <Compile Include="../../Lenovo Fan Controller/Class1.cs" Link="FanConfig.cs" />
+    <Compile Include="../../Lenovo Fan Controller/FanConfigFormat.cs" Link="FanConfigFormat.cs" />
+    <Compile Include="../../Lenovo Fan Controller/NormalFanCurvePolicy.cs" Link="NormalFanCurvePolicy.cs" />
+    <Compile Include="../../Lenovo Fan Controller/LegionFanTargets.cs" Link="LegionFanTargets.cs" />
+    <Compile Include="../../Lenovo Fan Controller/FanTargetRecovery.cs" Link="FanTargetRecovery.cs" />
+    <Compile Include="../../Lenovo Fan Controller/FanControlLease.cs" Link="FanControlLease.cs" />
+    <Compile Include="../../Lenovo Fan Controller/NormalFanSession.cs" Link="NormalFanSession.cs" />
+    <Compile Include="../../Lenovo Fan Controller/Hardware/HardwareAccessPolicy.cs" Link="HardwareAccessPolicy.cs" />
+    <Compile Include="../../Lenovo Fan Controller/Hardware/LegionEcWriter.cs" Link="LegionEcWriter.cs" />
+    <Compile Include="../../Lenovo Fan Controller/Hardware/LegionEcReader.cs" Link="LegionEcReader.cs" />
+  </ItemGroup>
+</Project>

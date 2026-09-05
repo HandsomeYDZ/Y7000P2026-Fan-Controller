@@ -111,7 +111,7 @@ namespace Lenovo_Fan_Controller
 
             // WMI unavailable or returned garbage — only trust legacy EC registers
             // on known Gen 5/6 EC chips.
-            if (ECUtils.IsLegacyGen56Chip())
+            if (HardwareAccessPolicy.LegacyWritesAllowed && ECUtils.IsLegacyGen56Chip())
             {
                 int ecValue = legacyEcReader();
                 if (ecValue >= minValid && ecValue <= maxValid)

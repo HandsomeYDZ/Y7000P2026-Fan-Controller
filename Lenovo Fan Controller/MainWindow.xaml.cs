@@ -37,11 +37,15 @@ namespace Lenovo_Fan_Controller
         private bool _isExiting = false;
         private bool _shouldStartMinimized = false;
         private bool _isInternalResize = false;
-        private int _lastWidth = 1000;
-        private int _lastHeight = 800;
+        private int _lastWidth;
+        private int _lastHeight;
         private bool _isReinitializing = false;
         private DispatcherTimer _monitoringTimer;
         private PowerModeListener _powerModeListener;
+        private NormalFanSession? _normalSession;
+        private DispatcherTimer? _controlHeartbeat;
+        private bool _startingNormalControl;
+        private string _normalStatus = "Automatic cooling. Save profiles, then enable curves.";
 
         private IntPtr _hwnd;
         private IntPtr _oldWndProc;
@@ -71,7 +75,7 @@ namespace Lenovo_Fan_Controller
         private const double GRAPH_MARGIN = 40;
         private const int MIN_TEMP = 0;
         private const int MAX_TEMP = 100;
-        private const int MIN_RPM = 0;
+        private int MIN_RPM => HardwareAccessPolicy.LegacyWritesAllowed ? 0 : 1500;
         private int MAX_RPM = 4500;
 
         // Dragging state
@@ -136,6 +140,7 @@ namespace Lenovo_Fan_Controller
         private void CheckStartMinimized()
         {
             var args = Environment.GetCommandLineArgs();
+            if (args.Any(arg => arg.Equals("/show", StringComparison.OrdinalIgnoreCase))) return;
 
             if (args.Length > 1 && args[1].Equals("/minimized", StringComparison.OrdinalIgnoreCase))
             {
@@ -172,18 +177,20 @@ namespace Lenovo_Fan_Controller
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
             _monitoringTimer?.Stop();
-            _powerModeListener?.Dispose();
-            SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;
-            if (_oldWndProc != IntPtr.Zero)
-            {
-                SetWindowLongPtr(_hwnd, GWLP_WNDPROC, _oldWndProc);
-            }
 
             if (_isExiting)
             {
+                _powerModeListener?.Dispose();
+                SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;
+                if (_oldWndProc != IntPtr.Zero)
+                    SetWindowLongPtr(_hwnd, GWLP_WNDPROC, _oldWndProc);
+                _controlHeartbeat?.Stop();
+                _normalSession?.Dispose();
+                _normalSession = null;
                 try
                 {
                     ECUtils.Cleanup();
+                    if (HardwareAccessPolicy.LegacyWritesAllowed)
                     foreach (var process in Process.GetProcessesByName("FanControl"))
                     {
                         try
@@ -204,6 +211,12 @@ namespace Lenovo_Fan_Controller
             HideWindow();
         }
 
+        [DllImport("user32.dll")]
+        private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+        private int WindowPixels(int logicalPixels) => (int)Math.Round(logicalPixels *
+            Math.Max(96u, GetDpiForWindow(WindowNative.GetWindowHandle(this))) / 96.0);
+
         private void SetWindowProperties()
         {
             var hWnd = WindowNative.GetWindowHandle(this);
@@ -211,11 +224,11 @@ namespace Lenovo_Fan_Controller
             _appWindow = AppWindow.GetFromWindowId(windowId);
 
             var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
-            var width = 1000;
-            var height = 800;
+            var width = WindowPixels(1000);
+            var height = WindowPixels(800);
             _appWindow.MoveAndResize(new Windows.Graphics.RectInt32(
-                (displayArea.WorkArea.Width - width) / 2,
-                (displayArea.WorkArea.Height - height) / 2,
+                displayArea.WorkArea.X + (displayArea.WorkArea.Width - width) / 2,
+                displayArea.WorkArea.Y + (displayArea.WorkArea.Height - height) / 2,
                 width,
                 height));
 
@@ -268,16 +281,16 @@ namespace Lenovo_Fan_Controller
                 if (newWidth == _lastWidth && newHeight == _lastHeight) return;
 
                 bool needsResize = false;
-                const double targetRatio = 1.25; // 1000 / 800
+                const double targetRatio = 1.25; // WindowPixels(1000) / WindowPixels(800)
 
                 // Maintain aspect ratio
                 if (!SettingsManager.GetAllowResizing())
                 {
                     // If resizing is locked, force back to default 1000x800
-                    if (newWidth != 1000 || newHeight != 800)
+                    if (newWidth != WindowPixels(1000) || newHeight != WindowPixels(800))
                     {
-                        newWidth = 1000;
-                        newHeight = 800;
+                        newWidth = WindowPixels(1000);
+                        newHeight = WindowPixels(800);
                         needsResize = true;
                     }
                 }
@@ -293,29 +306,29 @@ namespace Lenovo_Fan_Controller
                 }
 
                 // Enforce Min Size
-                if (newWidth < 800)
+                if (newWidth < WindowPixels(800))
                 {
-                    newWidth = 800;
+                    newWidth = WindowPixels(800);
                     newHeight = (int)(newWidth / targetRatio);
                     needsResize = true;
                 }
-                if (newHeight < 640)
+                if (newHeight < WindowPixels(640))
                 {
-                    newHeight = 640;
+                    newHeight = WindowPixels(640);
                     newWidth = (int)(newHeight * targetRatio);
                     needsResize = true;
                 }
 
                 // Enforce Max Size
-                if (newWidth > 1000)
+                if (newWidth > WindowPixels(1000))
                 {
-                    newWidth = 1000;
+                    newWidth = WindowPixels(1000);
                     newHeight = (int)(newWidth / targetRatio);
                     needsResize = true;
                 }
-                if (newHeight > 800)
+                if (newHeight > WindowPixels(800))
                 {
-                    newHeight = 800;
+                    newHeight = WindowPixels(800);
                     newWidth = (int)(newHeight * targetRatio);
                     needsResize = true;
                 }
@@ -488,6 +501,15 @@ namespace Lenovo_Fan_Controller
                 XamlRoot = this.Content?.XamlRoot
             };
 
+            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+            {
+                unlockMaxRpmCheckBox.IsEnabled = false;
+                enableSafeguardsCheckBox.IsChecked = true;
+                enableSafeguardsCheckBox.IsEnabled = false;
+                hysteresisLabel.Visibility = Visibility.Collapsed;
+                hysteresisBox.Visibility = Visibility.Collapsed;
+            }
+
             var result = await dialog.ShowAsync();
 
             if (result == ContentDialogResult.Primary)
@@ -506,10 +528,10 @@ namespace Lenovo_Fan_Controller
                     if (_appWindow.Presenter is OverlappedPresenter overlapped && overlapped.State != OverlappedPresenterState.Maximized)
                     {
                         _isInternalResize = true;
-                        _appWindow.Resize(new Windows.Graphics.SizeInt32(1000, 800));
+                        _appWindow.Resize(new Windows.Graphics.SizeInt32(WindowPixels(1000), WindowPixels(800)));
                         _isInternalResize = false;
-                        _lastWidth = 1000;
-                        _lastHeight = 800;
+                        _lastWidth = WindowPixels(1000);
+                        _lastHeight = WindowPixels(800);
                     }
                 }
 
@@ -517,7 +539,7 @@ namespace Lenovo_Fan_Controller
 
                 if (maxRpmChanged)
                 {
-                    MAX_RPM = SettingsManager.GetMaxRpm();
+                    MAX_RPM = HardwareAccessPolicy.LegacyWritesAllowed ? SettingsManager.GetMaxRpm() : 5300;
 
                     // Clamp existing points MAX_RPM
                     foreach (var p in cpuCurvePoints)
@@ -551,7 +573,7 @@ namespace Lenovo_Fan_Controller
 
                 CheckStartupStatus();
                 DrawFanCurve();
-                SaveConfig();
+                SaveConfig(apply: false);
             }
         }
 
@@ -837,38 +859,34 @@ namespace Lenovo_Fan_Controller
             await FirstRunHelper.ShowFirstRunWarning(this);
 
             // Initialize Hardware Monitoring
-            if (!ECUtils.Init())
+            if (!HardwareAccessPolicy.IsAuditedModernMachine && !ECUtils.Init())
             {
                 Debug.WriteLine("Show PawnIOInstallDialog");
                 await ShowPawnIOInstallDialog();
                 return;
             }
 
-            Debug.WriteLine("ECUtils.Init() returned true in MainWindow");
-
-            legionGeneration = SettingsManager.LegionGeneration;
-
-            // The EC chip tells us whether the Gen 5/6 register map applies at all.
-            // On newer platforms (e.g. Y7000P 2026, ITE 5508) a stale registry
-            // value of 5/6 from older versions must not be trusted: sensor reads
-            // go through WMI and the Gen 5/6 ACC/DEC registers must not be written.
-            if (!ECUtils.IsLegacyGen56Chip())
-            {
-                if (legionGeneration != 0)
-                {
-                    Debug.WriteLine($"EC chip is not a known Gen5/6 part — forcing legionGeneration 5/6 -> 0 (modern platform)");
-                    legionGeneration = 0;
-                    SettingsManager.LegionGeneration = 0;
-                }
-            }
-            else if (legionGeneration == 0)
-            {
-                // Legacy chip but no cached generation — re-detect.
-                legionGeneration = ECUtils.DetectLegionGen();
-                SettingsManager.LegionGeneration = legionGeneration;
-            }
+            legionGeneration = HardwareAccessPolicy.IsAuditedModernMachine ? 0 : ECUtils.DetectLegionGen();
+            HardwareAccessPolicy.ConfigureLegacyAccess(legionGeneration);
+            SettingsManager.LegionGeneration = legionGeneration;
 
             CreateSuggestedConfigsIfMissing();
+            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+            {
+                DeviceSelector.IsEnabled = false;
+                AccVal.IsEnabled = false;
+                DecVal.IsEnabled = false;
+                Restart.Content = "Enable curves";
+                Restart.Width = 130;
+                Save.Content = "Save & apply";
+                RestoreDefaultBtn.Content = "Reset editor curve";
+                DefaultBtn.Content = "Balanced";
+                ToolTipService.SetToolTip(Restart, "Apply saved curves in normal modes, or restore automatic cooling");
+                _controlHeartbeat = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                _controlHeartbeat.Tick += ControlHeartbeat_Tick;
+                // Independent of the monitor timer: continues while minimized.
+                _controlHeartbeat.Start();
+            }
             try
             {
                 // Detect current power mode
@@ -879,7 +897,7 @@ namespace Lenovo_Fan_Controller
                 string configPath = GetConfigPath(currentProfile);
 
                 // Apply max RPM setting BEFORE loading config
-                MAX_RPM = SettingsManager.GetMaxRpm();
+                MAX_RPM = HardwareAccessPolicy.LegacyWritesAllowed ? SettingsManager.GetMaxRpm() : 5300;
 
                 LoadConfig(configPath, currentProfile);
 
@@ -953,6 +971,10 @@ namespace Lenovo_Fan_Controller
 
         private void OnSystemPowerModeChanged(object sender, PowerModeChangedEventArgs e)
         {
+            if (e.Mode == PowerModes.Suspend)
+            {
+                try { _normalSession?.RequestStop(); } catch (ObjectDisposedException) { }
+            }
             if (e.Mode != PowerModes.Resume)
                 return;
 
@@ -977,7 +999,11 @@ namespace Lenovo_Fan_Controller
                     {
                         try
                         {
-                            if (ECUtils.Reinit())
+                            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+                            {
+                                curveApplied = true;
+                            }
+                            else if (ECUtils.Reinit())
                             {
                                 ApplyFanCurveToEC();
                                 curveApplied = true;
@@ -1040,9 +1066,11 @@ namespace Lenovo_Fan_Controller
 
         private string GetConfigPath(string profile)
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+                return Path.Combine(AppContext.BaseDirectory, "Config", $"fan_config_wmi_{profile}.txt");
             return profile switch
             {
-                "performance" => App.PerformanceConfigPath,
+                "performance" or "custom" => App.PerformanceConfigPath,
                 "quiet" => App.QuietConfigPath,
                 _ => App.BalancedConfigPath
             };
@@ -1126,6 +1154,7 @@ namespace Lenovo_Fan_Controller
 
         private string ReadCurrentECConfig()
         {
+            HardwareAccessPolicy.RequireLegacyWriteAccess();
             byte[] fan1RpmPoints = new byte[9];
             byte[] fan2RpmPoints = new byte[9];
             byte[] cpuRampUp = new byte[10];
@@ -1218,10 +1247,9 @@ hst_temps_ramp_down : {string.Join(" ", hstRampDown)}";
                     // where the Gen 5/6 register map does not apply (e.g. the
                     // Y7000P 2026: fan_rpm_points like "0 0 100 0 0 0 0 5700 0"),
                     // and re-applying that garbage corrupted the EC fan tables.
-                    // Applying the clean default also repairs an already
-                    // corrupted RPM table.
+                    // This is only an editor default; it is not a firmware repair.
                     string defaultContent = GetDefaultConfigContent();
-                    lines = defaultContent.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                    lines = FanConfigFormat.Lines(defaultContent);
                     needApply = true;
                 }
                 else
@@ -1242,10 +1270,12 @@ hst_temps_ramp_down : {string.Join(" ", hstRampDown)}";
                 {
                     Debug.WriteLine("LoadConfig: config curve invalid (legacy corruption), using clean default");
                     currentConfig = ParseConfig(GetDefaultConfigContent()
-                        .Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries));
+                        .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
                     needApply = true;
                 }
 
+                if (!HardwareAccessPolicy.LegacyWritesAllowed)
+                    NormalFanCurvePolicy.Validate(currentConfig, 1700, 5300);
                 LoadCurvePointsFromConfig();
                 UpdateDeviceSelector();
                 if (needApply)
@@ -1255,8 +1285,8 @@ hst_temps_ramp_down : {string.Join(" ", hstRampDown)}";
             {
                 _ = ShowDialogSafeAsync("Config Error", $"Failed to load config: {ex.Message}");
                 currentConfig = CreateDefaultConfig();
-                //InitializeCurvePoints(5);
-                //UpdateDeviceSelector();
+                LoadCurvePointsFromConfig();
+                UpdateDeviceSelector();
             }
         }
 
@@ -1313,74 +1343,12 @@ hst_temps_ramp_down : {string.Join(" ", hstRampDown)}";
             DrawFanCurve();
         }
 
-        private FanConfig ParseConfig(string[] lines)
-        {
-            int legionGen = GetConfigValue(lines, "legion_gen", 5);
-            int accelerationValue = GetConfigValue(lines, "fan_accl_value", 2);
-            int decelerationValue = GetConfigValue(lines, "fan_deccl_value", 2);
-            int[] fan1RpmPoints = GetConfigArray(lines, "fan_rpm_points", new[] { 0, 1500, 2200, 3600, 3900 });
-
-            return new FanConfig
-            {
-                LegionGeneration = legionGen,
-                FanCurvePoints = GetConfigValue(lines, "fan_curve_points", 5),
-                AccelerationValue = accelerationValue,
-                DecelerationValue = decelerationValue,
-                FanRpmPoints = fan1RpmPoints,
-                Fan2RpmPoints = GetConfigArray(lines, "fan2_rpm_points", fan1RpmPoints),
-                FanAccelerationValues = GetConfigArray(lines, "fan_accl_values",
-                    Enumerable.Repeat(accelerationValue, legionGen == 5 ? 2 : 10).ToArray()),
-                FanDecelerationValues = GetConfigArray(lines, "fan_deccl_values",
-                    Enumerable.Repeat(decelerationValue, legionGen == 5 ? 2 : 10).ToArray()),
-                CpuTempsRampUp = GetConfigArray(lines, "cpu_temps_ramp_up", new[] { 30, 45, 55, 60, 65 }),
-                CpuTempsRampDown = GetConfigArray(lines, "cpu_temps_ramp_down", new[] { 28, 43, 53, 58, 63 }),
-                GpuTempsRampUp = GetConfigArray(lines, "gpu_temps_ramp_up", new[] { 30, 50, 55, 60, 63 }),
-                GpuTempsRampDown = GetConfigArray(lines, "gpu_temps_ramp_down", new[] { 28, 48, 53, 58, 61 }),
-                HstTempsRampUp = GetConfigArray(lines, "hst_temps_ramp_up", new[] { 30, 50, 55, 65, 70 }),
-                HstTempsRampDown = GetConfigArray(lines, "hst_temps_ramp_down", new[] { 28, 48, 53, 63, 68 }),
-                Hysteresis = GetConfigValue(lines, "hysteresis", 3)
-            };
-        }
-
-        private int GetConfigValue(string[] lines, string key, int defaultValue)
-        {
-            try
-            {
-                var line = lines.FirstOrDefault(l => l.StartsWith(key));
-                if (line != null)
-                {
-                    var value = line.Split(':')[1].Trim();
-                    return int.Parse(value);
-                }
-                return defaultValue;
-            }
-            catch
-            {
-                return defaultValue;
-            }
-        }
-
-        private int[] GetConfigArray(string[] lines, string key, int[] defaultValue)
-        {
-            try
-            {
-                var line = lines.FirstOrDefault(l => l.StartsWith(key));
-                if (line != null)
-                {
-                    var values = line.Split(':')[1].Trim()
-                        .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    return values.Select(int.Parse).ToArray();
-                }
-                return defaultValue;
-            }
-            catch
-            {
-                return defaultValue;
-            }
-        }
+        private FanConfig ParseConfig(string[] lines) => FanConfigFormat.ParseConfig(lines);
 
         private FanConfig CreateDefaultConfig()
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+                return ParseConfig(FanConfigFormat.Lines(GetDefaultConfigContent()));
             return new FanConfig
             {
                 LegionGeneration = 5,
@@ -1403,6 +1371,8 @@ hst_temps_ramp_down : {string.Join(" ", hstRampDown)}";
 
         private string GetDefaultConfigContent()
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+                return FanConfigFormat.ModernDefault;
             return @"legion_gen : 5
 fan_curve_points : 5
 fan_accl_value : 2
@@ -1418,6 +1388,8 @@ hst_temps_ramp_down : 28 48 53 63 68";
 
         private void ApplyFanCurveToEC(bool isRestore = false)
         {
+            // Guard the ENTIRE transaction before backup reads or the first write.
+            if (!HardwareAccessPolicy.LegacyWritesAllowed) return;
             if (currentConfig == null || cpuCurvePoints.Count < 2) return;
 
             for (int i = 1; i < cpuCurvePoints.Count; i++)
@@ -1486,6 +1458,8 @@ hst_temps_ramp_down : 28 48 53 63 68";
 
         private void ApplyConfigToUI(FanConfig config)
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+                NormalFanCurvePolicy.Validate(config, 1700, 5300);
             currentConfig = config;
             LoadCurvePointsFromConfig();
             UpdateDeviceSelector();
@@ -1536,7 +1510,7 @@ hst_temps_ramp_down : 28 48 53 63 68";
                     ApplyConfigToUI(suggestedConfig);
 
                     await ShowDialogSafeAsync("Config Loaded",
-                        $"Suggested {mode} configuration loaded.\n\nClick Save to apply to EC.");
+                        $"Suggested {mode} configuration loaded.\n\nClick Save & apply to enable the curve.");
                 }
                 catch (Exception ex)
                 {
@@ -1626,7 +1600,7 @@ hst_temps_ramp_down : 28 48 53 63 68";
             ApplyConfigToUI(config);
 
             await ShowDialogSafeAsync("Config Loaded",
-                $"Configuration loaded from:\n{Path.GetFileName(path)}\n\nClick Save to apply to EC.");
+                $"Configuration loaded from:\n{Path.GetFileName(path)}\n\nClick Save & apply to enable the curve.");
         }
 
         private async Task<ContentDialogResult> ShowConfirmationDialogAsync(string title, string message)
@@ -1644,10 +1618,13 @@ hst_temps_ramp_down : 28 48 53 63 68";
             return await dialog.ShowAsync();
         }
 
-        private void SaveConfig()
+        private async void SaveConfig(bool apply = true)
         {
+            if (_startingNormalControl) return;
             try
             {
+                if (!HardwareAccessPolicy.LegacyWritesAllowed && currentProfile is not ("quiet" or "balanced" or "performance"))
+                    throw new InvalidOperationException("Only Quiet, Balanced and Performance profiles support this controller.");
                 currentConfig.FanCurvePoints = cpuCurvePoints.Count;
                 currentConfig.AccelerationValue = (int)AccVal.Value;
                 currentConfig.DecelerationValue = (int)DecVal.Value;
@@ -1665,6 +1642,10 @@ hst_temps_ramp_down : 28 48 53 63 68";
                 currentConfig.GpuTempsRampUp = gpuCurvePoints.Select(p => p.Temp).ToArray();
                 currentConfig.GpuTempsRampDown = gpuCurvePoints
                     .Select(p => Math.Max(0, p.Temp - currentConfig.Hysteresis)).ToArray();
+                if (!HardwareAccessPolicy.LegacyWritesAllowed)
+                {
+                    NormalFanCurvePolicy.Validate(currentConfig, 1700, 5300);
+                }
                 ApplyFanCurveToEC();
 
                 string configPath = GetConfigPath(currentProfile);
@@ -1672,11 +1653,14 @@ hst_temps_ramp_down : 28 48 53 63 68";
                 string configContent = GenerateConfigContent();
                 File.WriteAllText(configPath, configContent);
 
-                ShowSuccessDialog("Configuration saved", "");
+                if (!HardwareAccessPolicy.LegacyWritesAllowed && apply)
+                    await ApplySavedNormalProfilesAsync();
+                else
+                    ShowSuccessDialog("Configuration saved", "");
             }
             catch (Exception ex)
             {
-                ShowErrorDialog("Error Saving Config", $"Failed to save configuration: {ex.Message} ");
+                ShowErrorDialog("Save / apply failed", $"Control was not started. The profile may already be saved: {ex.Message}");
             }
         }
 
@@ -1699,6 +1683,7 @@ hst_temps_ramp_down : 28 48 53 63 68";
 
         private string GetDefaultBalancedSuggested()
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed) return GetDefaultConfigContent();
             return @"fan_curve_points : 9
 fan_accl_value : 2
 fan_deccl_value : 2
@@ -1714,6 +1699,7 @@ hst_temps_ramp_down : 28 48 53 63 68 73 78 83 85";
 
         private string GetDefaultPerformanceSuggested()
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed) return GetDefaultConfigContent();
             return @"fan_curve_points : 9
 fan_accl_value : 1
 fan_deccl_value : 1
@@ -1729,6 +1715,7 @@ hst_temps_ramp_down : 28 48 53 63 68 73 78 83 85";
 
         private string GetDefaultQuietSuggested()
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed) return GetDefaultConfigContent();
             return @"fan_curve_points : 9
 fan_accl_value : 3
 fan_deccl_value : 4
@@ -1769,7 +1756,7 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
 
             try
             {
-                DeviceSelector.SelectedIndex = legionGeneration == 5 ? 0 : 1;
+                DeviceSelector.SelectedIndex = legionGeneration == 5 ? 0 : legionGeneration == 6 ? 1 : 2;
             }
             catch (Exception ex)
             {
@@ -1806,6 +1793,12 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
 
         private void UpdateCurveInfo()
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed && CurveInfoText != null)
+            {
+                CurveInfoText.Text = _normalStatus;
+                ToolTipService.SetToolTip(CurveInfoText, _normalStatus + "\n1700–5300 RPM; both fans follow CPU/GPU/PCH demand. Auto at CPU 90 / GPU 85 / PCH 80 °C.");
+                return;
+            }
             if (CurveInfoText != null)
             {
                 if (currentEditingCurve == "cpu")
@@ -1848,6 +1841,7 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
                 Colors.LimeGreen;
 
             DrawCurve(points, graphWidth, graphHeight, curveColor, currentEditingCurve);
+            UpdateCurveInfo();
         }
 
         private void DrawGrid(double graphWidth, double graphHeight)
@@ -1940,7 +1934,7 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
             }
 
             // Y-axis labels (RPM)
-            for (int rpm = MIN_RPM; rpm <= MAX_RPM; rpm += 1000)
+            for (int rpm = HardwareAccessPolicy.LegacyWritesAllowed ? 0 : 2000; rpm <= MAX_RPM; rpm += 1000)
             {
                 double y = GRAPH_MARGIN + graphHeight - ((rpm - MIN_RPM) / (double)(MAX_RPM - MIN_RPM) * graphHeight);
                 var label = new TextBlock
@@ -2277,8 +2271,9 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
                 int rawRpm = (int)Math.Clamp(MIN_RPM + (MAX_RPM - MIN_RPM) * rpmPercent, MIN_RPM, MAX_RPM);
 
                 // Snap to 50 RPM intervals
-                int newRpm = (int)(Math.Round(rawRpm / 50.0) * 50);
-                newRpm = (int)Math.Clamp(newRpm, MIN_RPM, MAX_RPM);
+                int rpmStep = HardwareAccessPolicy.LegacyWritesAllowed ? 50 : 100;
+                int newRpm = (int)(Math.Round(rawRpm / (double)rpmStep) * rpmStep);
+                newRpm = Math.Clamp(newRpm, HardwareAccessPolicy.LegacyWritesAllowed ? MIN_RPM : 1700, MAX_RPM);
 
                 // Safety constraint
                 if (SettingsManager.GetEnableSafeguards())
@@ -2468,7 +2463,7 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
             var rpmBox = new NumberBox
             {
                 Value = point.Rpm,
-                Minimum = MIN_RPM,
+                Minimum = HardwareAccessPolicy.LegacyWritesAllowed ? MIN_RPM : 1700,
                 Maximum = MAX_RPM,
                 SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
                 IsEnabled = currentEditingCurve == "cpu"
@@ -2500,6 +2495,8 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
                 {
                     int newTemp = (int)tempBox.Value;
                     int newRpm = (int)rpmBox.Value;
+                    if (!HardwareAccessPolicy.LegacyWritesAllowed)
+                        newRpm = Math.Clamp(((newRpm + 99) / 100) * 100, 1700, 5300);
 
                     // Safety constraint
                     if (SettingsManager.GetEnableSafeguards() && currentEditingCurve == "cpu")
@@ -2589,7 +2586,22 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
 
                 try
                 {
+                    if (!HardwareAccessPolicy.LegacyWritesAllowed && _normalSession != null)
+                    {
+                        _startingNormalControl = true;
+                        _normalSession.RequestStop();
+                        await _normalSession.WaitForStopAsync();
+                        _normalStatus = _normalSession.Status;
+                        _normalSession.Dispose();
+                        _normalSession = null;
+                        Restart.Content = "Enable curves";
+                    }
                     // Wait for system to apply default EC curve for this mode, then override with user config
+                    if (!HardwareAccessPolicy.LegacyWritesAllowed)
+                    {
+                        var conflicts = LegionFanTargets.ConflictingApps(Environment.ProcessId);
+                        if (conflicts.Length > 0) throw new InvalidOperationException("Close other fan/mode applications first: " + string.Join(", ", conflicts));
+                    }
                     bool success = await PowerModeHelper.SetPowerModeAndWaitAsync(powerMode, legionGeneration);
 
                     if (!success)
@@ -2609,8 +2621,13 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
                     LoadConfig(configPath, newProfile);
                     SetActiveProfileButton(newProfile);
                 }
+                catch (Exception ex)
+                {
+                    await ShowDialogSafeAsync("Power mode", ex.Message);
+                }
                 finally
                 {
+                    _startingNormalControl = false;
                     SetLoadingState(false);
                 }
             }
@@ -2622,21 +2639,82 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
             DefaultBtn.IsEnabled = !isLoading;
             PerformanceBtn.IsEnabled = !isLoading;
             QuietBtn.IsEnabled = !isLoading;
+            Restart.IsEnabled = !isLoading;
         }
 
         private void DeviceSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (DeviceSelector.SelectedItem is ComboBoxItem selectedItem && currentConfig != null)
-            {
-                legionGeneration = selectedItem.Content.ToString().Contains("5th") ? 5 : 6;
-                SettingsManager.LegionGeneration = legionGeneration;
-            }
+            // Display only. A UI selection must never grant hardware write access.
+            UpdateDeviceSelector();
         }
 
         private void Save_Click(object sender, RoutedEventArgs e) => SaveConfig();
 
-        private void Restart_Click(object sender, RoutedEventArgs e)
+        private async Task ApplySavedNormalProfilesAsync()
         {
+            _startingNormalControl = true;
+            Restart.IsEnabled = Save.IsEnabled = false;
+            try
+            {
+                if (_normalSession != null)
+                {
+                    _normalSession.RequestStop();
+                    await _normalSession.WaitForStopAsync();
+                    if (!_normalSession.Status.StartsWith("Automatic cooling requested.", StringComparison.Ordinal))
+                        await Task.Run(() => { using var firmware = new LegionFanTargets(); firmware.RecoverLostSession(); });
+                    _normalSession.Dispose();
+                    _normalSession = null;
+                }
+                var profiles = new Dictionary<int, FanConfig>();
+                foreach (var entry in new[] { (1, "quiet"), (2, "balanced"), (3, "performance") })
+                {
+                    string path = GetConfigPath(entry.Item2);
+                    if (File.Exists(path)) profiles.Add(entry.Item1, ParseConfig(File.ReadAllLines(path)));
+                }
+                _normalSession = new NormalFanSession();
+                await _normalSession.StartAsync(profiles);
+                Restart.Content = "Restore auto";
+                _normalStatus = "Controller started; waiting for measured fan feedback…";
+            }
+            catch
+            {
+                if (_normalSession != null)
+                {
+                    _normalSession.RequestStop();
+                    await _normalSession.WaitForStopAsync();
+                    if (!_normalSession.Status.StartsWith("Automatic cooling requested.", StringComparison.Ordinal))
+                        await Task.Run(() => { using var firmware = new LegionFanTargets(); firmware.RecoverLostSession(); });
+                    _normalSession.Dispose();
+                    _normalSession = null;
+                }
+                Restart.Content = "Enable curves";
+                _normalStatus = "Curve control failed to start. See error details.";
+                throw;
+            }
+            finally
+            {
+                _startingNormalControl = false;
+                Restart.IsEnabled = Save.IsEnabled = true;
+                UpdateCurveInfo();
+            }
+        }
+
+        private async void Restart_Click(object sender, RoutedEventArgs e)
+        {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+            {
+                if (_startingNormalControl) return;
+                if (_normalSession != null)
+                {
+                    _normalSession.RequestStop();
+                    _normalStatus = "Stopping; restoring automatic cooling…";
+                    UpdateCurveInfo();
+                    return;
+                }
+                try { await ApplySavedNormalProfilesAsync(); }
+                catch (Exception ex) { await ShowDialogSafeAsync("Fan Control", ex.Message); }
+                return;
+            }
             try
             {
                 ApplyFanCurveToEC();
@@ -2651,8 +2729,9 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
         private async void RestoreDefaultBtn_Click(object sender, RoutedEventArgs e)
         {
             var result = await ShowConfirmationDialogAsync("Restore Default Curve",
-                $"Restore default fan curve for {currentProfile} mode?\n\n" +
-                "This will replace your current settings and apply to EC immediately.");
+                HardwareAccessPolicy.LegacyWritesAllowed
+                    ? $"Restore default fan curve for {currentProfile} mode?\n\nThis will replace your current settings and apply to EC immediately."
+                    : "Load the built-in editor curve and stop active target control? No firmware table is restored.");
 
             if (result != ContentDialogResult.Primary)
                 return;
@@ -2662,6 +2741,14 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
 
         private void RestoreDefaultConfig()
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+            {
+                _normalSession?.RequestStop();
+                currentConfig = CreateDefaultConfig();
+                LoadCurvePointsFromConfig();
+                ShowSuccessDialog("Editor reset", "Built-in editor curve loaded. No firmware table was restored or written.");
+                return;
+            }
             string backupPath = GetBackupPath();
 
             if (!File.Exists(backupPath))
@@ -2694,6 +2781,37 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
             }
         }
 
+        private async void ControlHeartbeat_Tick(object? sender, object e)
+        {
+            if (_normalSession == null || _startingNormalControl) return;
+            if (_normalSession.IsRunning)
+            {
+                _normalSession.Pulse();
+                try { _normalStatus = _normalSession.Status; } catch (IOException) { }
+            }
+            else
+            {
+                Restart.IsEnabled = false;
+                var ended = _normalSession;
+                _normalSession = null;
+                try
+                {
+                    _normalStatus = ended.Status;
+                    // If the helper crashed, its finally block may not have run.
+                    // A live GUI provides the other half of the recovery pair.
+                    if (!_normalStatus.StartsWith("Automatic cooling requested.", StringComparison.Ordinal))
+                    {
+                        await Task.Run(() => { using var firmware = new LegionFanTargets(); firmware.RecoverLostSession(); });
+                        _normalStatus = "Automatic cooling requested after helper exit. " + _normalStatus;
+                    }
+                }
+                catch (Exception ex) { _normalStatus = "Recovery needs attention: " + ex.Message; }
+                finally { ended.Dispose(); Restart.IsEnabled = true; }
+                Restart.Content = "Enable curves";
+            }
+            UpdateCurveInfo();
+        }
+
         private void AddPoint_Click(object sender, RoutedEventArgs e)
         {
             if (cpuCurvePoints.Count >= 8)
@@ -2719,6 +2837,7 @@ hst_temps_ramp_down : {string.Join(" ", currentConfig.HstTempsRampDown)}";
             // Insert new point in the middle of the largest gap
             int newTemp = (cpuCurvePoints[bestIndex].Temp + cpuCurvePoints[bestIndex + 1].Temp) / 2;
             int newRpm = (cpuCurvePoints[bestIndex].Rpm + cpuCurvePoints[bestIndex + 1].Rpm) / 2;
+            if (!HardwareAccessPolicy.LegacyWritesAllowed) newRpm = ((newRpm + 99) / 100) * 100;
 
             cpuCurvePoints.Insert(bestIndex + 1, new CurvePoint { Temp = newTemp, Rpm = newRpm });
             gpuCurvePoints.Insert(bestIndex + 1, new CurvePoint { Temp = newTemp, Rpm = newRpm });

@@ -1,3 +1,7 @@
+# Disabled after an unexplained power-off. A flat minimum table is not safe recovery.
+throw 'This write test is retired. Run read-modern-fan-state.ps1 for read-only diagnosis. No hardware was changed.'
+
+# Historical script below; deliberately unreachable.
 # Controlled test: does Fan_Set_Table actually control fan speed on this machine?
 # Flow: remember mode -> switch to Custom(255) -> write test step table ->
 #       sample speeds 15s -> write safe low table -> restore original mode.

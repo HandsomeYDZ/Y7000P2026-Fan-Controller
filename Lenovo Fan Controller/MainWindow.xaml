@@ -81,6 +81,7 @@
                     <ComboBox x:Name="DeviceSelector" SelectedIndex="0" Width="100" Height="36" FontSize="12">
                         <ComboBoxItem Tag="5" Content="5th Gen"/>
                         <ComboBoxItem Tag="6" Content="6th Gen"/>
+                        <ComboBoxItem Tag="0" Content="WMI"/>
                         <ToolTipService.ToolTip>
                             <ToolTip Content="Select your Lenovo Legion Generation."/>
                         </ToolTipService.ToolTip>
@@ -190,7 +191,7 @@
                                    FontSize="11" 
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    Margin="0,0,0,12"
-                                   TextWrapping="Wrap"/>
+                                   MaxLines="1" TextTrimming="CharacterEllipsis"/>
                         
                         <!-- Fan Curve Canvas -->
                         <Border Grid.Row="2" 

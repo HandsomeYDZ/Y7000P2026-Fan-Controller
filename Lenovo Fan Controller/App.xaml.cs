@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using System;
 using System.IO;
 
@@ -15,6 +15,17 @@ namespace Lenovo_Fan_Controller
         public static string SuggestedQuietPath { get; private set; }
         public App()
         {
+            var args = Environment.GetCommandLineArgs();
+            if (args.Length == 2 && args[1] == "--test-normal-fans-4000")
+            {
+                Environment.Exit(System.Threading.Tasks.Task.Run(NormalFanDiagnostic.RunAsync).GetAwaiter().GetResult());
+                return;
+            }
+            if (args.Length > 1 && args[1] == "--normal-fan-session")
+            {
+                Environment.Exit(NormalFanSession.RunWorker(args));
+                return;
+            }
             this.InitializeComponent();
             InitializePaths();
             //InitializeConfigFiles();
@@ -34,9 +45,9 @@ namespace Lenovo_Fan_Controller
             PerformanceConfigPath = Path.Combine(configDir, "fan_config_perfcust.txt");
             QuietConfigPath = Path.Combine(configDir, "fan_config_quiet.txt");
 
-            SuggestedBalancedPath = Path.Combine(suggestedDir, "fan_config_balanced.txt");
-            SuggestedPerformancePath = Path.Combine(suggestedDir, "fan_config_perfcust.txt");
-            SuggestedQuietPath = Path.Combine(suggestedDir, "fan_config_quiet.txt");
+            SuggestedBalancedPath = Path.Combine(suggestedDir, (LegionFanController.Hardware.HardwareAccessPolicy.IsAuditedModernMachine ? "wmi_" : "") + "fan_config_balanced.txt");
+            SuggestedPerformancePath = Path.Combine(suggestedDir, (LegionFanController.Hardware.HardwareAccessPolicy.IsAuditedModernMachine ? "wmi_" : "") + "fan_config_perfcust.txt");
+            SuggestedQuietPath = Path.Combine(suggestedDir, (LegionFanController.Hardware.HardwareAccessPolicy.IsAuditedModernMachine ? "wmi_" : "") + "fan_config_quiet.txt");
         }
 
         private void InitializeConfigFiles()

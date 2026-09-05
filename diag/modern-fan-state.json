@@ -1,0 +1,691 @@
+{
+  "Time": "2026-09-05T17:58:44.4830501+08:00",
+  "Model": "83F3",
+  "Bios": "Q6CN79WW",
+  "Mode": 2,
+  "Sensors": {
+    "GpuTemp": 0,
+    "CpuTemp": 55,
+    "PchTemp": 44,
+    "CpuRpm": 2100,
+    "GpuRpm": 2100
+  },
+  "FanCapabilities": [
+    {
+      "IDs": 67305473,
+      "DefaultValue": 1,
+      "InstanceName": "ACPI\\PNP0C14\\GMZN_33",
+      "Active": true,
+      "Capability": 7
+    },
+    {
+      "IDs": 67305474,
+      "DefaultValue": 1,
+      "InstanceName": "ACPI\\PNP0C14\\GMZN_34",
+      "Active": true,
+      "Capability": 7
+    },
+    {
+      "IDs": 67305476,
+      "DefaultValue": 0,
+      "InstanceName": "ACPI\\PNP0C14\\GMZN_35",
+      "Active": true,
+      "Capability": 0
+    }
+  ],
+  "FanTestData": [
+    {
+      "Active": true,
+      "NumOfFans": 2,
+      "InstanceName": "ACPI\\PNP0C14\\GMZN_0",
+      "FanMaxSpeed": [
+        5300,
+        5300
+      ],
+      "FanMinSpeed": [
+        1700,
+        1700
+      ],
+      "FanId": [
+        1,
+        2
+      ]
+    }
+  ],
+  "Methods": [
+    {
+      "Parameters": [
+        {
+          "Qualifiers": [
+            {
+              "Value": 0,
+              "Name": "ID"
+            },
+            {
+              "Value": true,
+              "Name": "in"
+            }
+          ],
+          "Type": "UInt8",
+          "Name": "FanID"
+        },
+        {
+          "Qualifiers": [
+            {
+              "Value": 1,
+              "Name": "ID"
+            },
+            {
+              "Value": true,
+              "Name": "in"
+            }
+          ],
+          "Type": "UInt8",
+          "Name": "SensorID"
+        },
+        {
+          "Qualifiers": [
+            {
+              "Value": 3,
+              "Name": "ID"
+            },
+            {
+              "Value": true,
+              "Name": "out"
+            },
+            {
+              "Value": "FanTableSize",
+              "Name": "WmiSizeIs"
+            }
+          ],
+          "Type": "UInt32Array",
+          "Name": "FanTable"
+        },
+        {
+          "Qualifiers": [
+            {
+              "Value": 2,
+              "Name": "ID"
+            },
+            {
+              "Value": true,
+              "Name": "out"
+            }
+          ],
+          "Type": "UInt32",
+          "Name": "FanTableSize"
+        },
+        {
+          "Qualifiers": [
+            {
+              "Value": 5,
+              "Name": "ID"
+            },
+            {
+              "Value": true,
+              "Name": "out"
+            },
+            {
+              "Value": "SensorTableSize",
+              "Name": "WmiSizeIs"
+            }
+          ],
+          "Type": "UInt32Array",
+          "Name": "SensorTable"
+        },
+        {
+          "Qualifiers": [
+            {
+              "Value": 4,
+              "Name": "ID"
+            },
+            {
+              "Value": true,
+              "Name": "out"
+            }
+          ],
+          "Type": "UInt32",
+          "Name": "SensorTableSize"
+        }
+      ],
+      "Name": "Fan_Get_Table",
+      "ReturnType": "Boolean"
+    },
+    {
+      "Parameters": [
+        {
+          "Qualifiers": [
+            {
+              "Value": 0,
+              "Name": "ID"
+            },
+            {
+              "Value": true,
+              "Name": "in"
+            },
+            {
+              "Value": 64,
+              "Name": "Max"
+            }
+          ],
+          "Type": "UInt8Array",
+          "Name": "FanTable"
+        }
+      ],
+      "Name": "Fan_Set_Table",
+      "ReturnType": "Boolean"
+    }
+  ],
+  "Tables": [
+    {
+      "Mode": 1,
+      "Fan_Id": 1,
+      "Sensor_ID": 1,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        37,
+        41,
+        44,
+        47,
+        127,
+        127,
+        127,
+        127,
+        127,
+        127
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 7
+    },
+    {
+      "Mode": 1,
+      "Fan_Id": 2,
+      "Sensor_ID": 5,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2100,
+        2600,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        53,
+        53,
+        53,
+        53,
+        53,
+        53,
+        56,
+        59,
+        65,
+        77
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 7
+    },
+    {
+      "Mode": 1,
+      "Fan_Id": 1,
+      "Sensor_ID": 4,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        65,
+        65,
+        65,
+        65,
+        65,
+        68,
+        71,
+        75,
+        80,
+        90
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 7
+    },
+    {
+      "Mode": 3,
+      "Fan_Id": 1,
+      "Sensor_ID": 1,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        37,
+        41,
+        44,
+        47,
+        127,
+        127,
+        127,
+        127,
+        127,
+        127
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 9
+    },
+    {
+      "Mode": 3,
+      "Fan_Id": 2,
+      "Sensor_ID": 5,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2100,
+        2600,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        53,
+        53,
+        53,
+        53,
+        53,
+        53,
+        56,
+        59,
+        65,
+        77
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 9
+    },
+    {
+      "Mode": 3,
+      "Fan_Id": 1,
+      "Sensor_ID": 4,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        65,
+        65,
+        65,
+        65,
+        65,
+        68,
+        71,
+        75,
+        80,
+        90
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 9
+    },
+    {
+      "Mode": 2,
+      "Fan_Id": 1,
+      "Sensor_ID": 1,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        37,
+        41,
+        44,
+        47,
+        127,
+        127,
+        127,
+        127,
+        127,
+        127
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 8
+    },
+    {
+      "Mode": 2,
+      "Fan_Id": 2,
+      "Sensor_ID": 5,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2100,
+        2600,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        53,
+        53,
+        53,
+        53,
+        53,
+        53,
+        56,
+        59,
+        65,
+        77
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 8
+    },
+    {
+      "Mode": 2,
+      "Fan_Id": 1,
+      "Sensor_ID": 4,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        65,
+        65,
+        65,
+        65,
+        65,
+        68,
+        71,
+        75,
+        80,
+        90
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 8
+    },
+    {
+      "Mode": 255,
+      "Fan_Id": 1,
+      "Sensor_ID": 1,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        37,
+        41,
+        44,
+        47,
+        127,
+        127,
+        127,
+        127,
+        127,
+        127
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 8
+    },
+    {
+      "Mode": 255,
+      "Fan_Id": 2,
+      "Sensor_ID": 5,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2100,
+        2600,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        53,
+        53,
+        53,
+        53,
+        53,
+        53,
+        56,
+        59,
+        65,
+        77
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 8
+    },
+    {
+      "Mode": 255,
+      "Fan_Id": 1,
+      "Sensor_ID": 4,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        65,
+        65,
+        65,
+        65,
+        65,
+        68,
+        71,
+        75,
+        80,
+        90
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 8
+    },
+    {
+      "Mode": 224,
+      "Fan_Id": 1,
+      "Sensor_ID": 1,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        37,
+        41,
+        44,
+        47,
+        127,
+        127,
+        127,
+        127,
+        127,
+        127
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 10
+    },
+    {
+      "Mode": 224,
+      "Fan_Id": 2,
+      "Sensor_ID": 5,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2100,
+        2600,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        53,
+        53,
+        53,
+        53,
+        53,
+        53,
+        56,
+        59,
+        65,
+        77
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 10
+    },
+    {
+      "Mode": 224,
+      "Fan_Id": 1,
+      "Sensor_ID": 4,
+      "FanTable_Len": 10,
+      "FanTable_Data": [
+        1700,
+        1900,
+        2100,
+        2400,
+        2400,
+        3200,
+        3400,
+        3800,
+        4300,
+        5100
+      ],
+      "SensorTable_Len": 10,
+      "SensorTable_Data": [
+        65,
+        65,
+        65,
+        65,
+        65,
+        68,
+        71,
+        75,
+        80,
+        90
+      ],
+      "CurrentFanMinSpeed": 1700,
+      "CurrentFanMaxSpeed": 5100,
+      "DesignMaxFanSpeedNumber": 10
+    }
+  ]
+}

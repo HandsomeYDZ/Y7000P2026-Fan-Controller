@@ -49,6 +49,17 @@ public static class PowerModeHelper
     {
         try
         {
+            if (!HardwareAccessPolicy.LegacyWritesAllowed)
+            {
+                if (!SetPowerMode(mode)) return false;
+                var deadline = Stopwatch.StartNew();
+                while (deadline.ElapsedMilliseconds < timeoutMs)
+                {
+                    await Task.Delay(100);
+                    if (GetCurrentPowerMode() == mode) return true;
+                }
+                return false;
+            }
             // Select registers based on generation
             ushort acclAddr, declAddr, tempAddr;
 
@@ -135,12 +146,12 @@ public static class PowerModeHelper
                     return (LegionPowerMode)Convert.ToInt32(outParams["Data"]);
                 }
             }
-            return LegionPowerMode.Balanced;
+            return (LegionPowerMode)0;
         }
         catch (ManagementException ex)
         {
             Debug.WriteLine($"WMI Error (Get): {ex.Message}");
-            return LegionPowerMode.Balanced;
+            return (LegionPowerMode)0;
         }
         finally
         {
@@ -155,7 +166,7 @@ public static class PowerModeHelper
             LegionPowerMode.Quiet => "quiet",
             LegionPowerMode.Balanced => "balanced",
             LegionPowerMode.Performance => "performance",
-            LegionPowerMode.Custom => "performance",
+            LegionPowerMode.Custom => "custom",
             _ => "default"
         };
     }

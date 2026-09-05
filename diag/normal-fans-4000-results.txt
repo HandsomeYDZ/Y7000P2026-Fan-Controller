@@ -1,0 +1,23 @@
+2026-09-05T19:04:52.0764443+08:00 Baseline (2, 64, 0, 45, 2100, 2100)
+2026-09-05T19:04:53.3794000+08:00 Sample 1: (2, 66, 0, 45, 2100, 2100); helper=Mode 2: target 4000 RPM; CPU 2100, GPU 2100 RPM.
+2026-09-05T19:04:54.3959574+08:00 Sample 2: (2, 61, 0, 45, 2400, 2400); helper=Mode 2: target 4000 RPM; CPU 2300, GPU 2300 RPM.
+2026-09-05T19:04:55.4215419+08:00 Sample 3: (2, 59, 0, 45, 2600, 2600); helper=Mode 2: target 4000 RPM; CPU 2500, GPU 2500 RPM.
+2026-09-05T19:04:56.4519884+08:00 Sample 4: (2, 61, 0, 45, 2800, 2900); helper=Mode 2: target 4000 RPM; CPU 2700, GPU 2800 RPM.
+2026-09-05T19:04:57.4853127+08:00 Sample 5: (2, 62, 0, 45, 3100, 3100); helper=Mode 2: target 4000 RPM; CPU 3000, GPU 3000 RPM.
+2026-09-05T19:04:58.5157550+08:00 Sample 6: (2, 63, 0, 45, 3300, 3400); helper=Mode 2: target 4000 RPM; CPU 3200, GPU 3300 RPM.
+2026-09-05T19:04:59.5348968+08:00 Sample 7: (2, 60, 0, 45, 3500, 3600); helper=Mode 2: target 4000 RPM; CPU 3400, GPU 3500 RPM.
+2026-09-05T19:05:00.5498303+08:00 Sample 8: (2, 60, 0, 45, 3700, 3800); helper=Mode 2: target 4000 RPM; CPU 3600, GPU 3700 RPM.
+2026-09-05T19:05:01.5788053+08:00 Sample 9: (2, 59, 0, 45, 3900, 4000); helper=Mode 2: target 4000 RPM; CPU 3900, GPU 3900 RPM.
+2026-09-05T19:05:02.6087329+08:00 Sample 10: (2, 60, 0, 45, 4000, 4000); helper=Mode 2: target 4000 RPM; CPU 4000, GPU 4000 RPM.
+2026-09-05T19:05:03.6296102+08:00 Sample 11: (2, 60, 0, 45, 4000, 4000); helper=Mode 2: target 4000 RPM; CPU 4000, GPU 4000 RPM.
+2026-09-05T19:05:04.6583078+08:00 Sample 12: (2, 57, 0, 45, 4000, 4000); helper=Mode 2: target 4000 RPM; CPU 4000, GPU 4000 RPM.
+2026-09-05T19:05:04.6585699+08:00 PASS: both measured fans reached 4000 ±100 RPM for at least three samples; mode unchanged.
+2026-09-05T19:05:05.3296292+08:00 Stopped: Automatic cooling requested. Session ended; enable curves to start again.
+2026-09-05T19:05:06.3635242+08:00 Automatic recovery (2, 57, 0, 44, 3900, 3900)
+2026-09-05T19:05:07.3859564+08:00 Automatic recovery (2, 61, 0, 44, 3900, 3900)
+2026-09-05T19:05:08.4087127+08:00 Automatic recovery (2, 58, 0, 44, 3800, 3800)
+2026-09-05T19:05:09.4225031+08:00 Automatic recovery (2, 56, 0, 44, 3700, 3700)
+2026-09-05T19:05:10.4388637+08:00 Automatic recovery (2, 54, 0, 44, 3700, 3700)
+2026-09-05T19:05:11.4640530+08:00 Automatic recovery (2, 55, 0, 44, 3600, 3600)
+2026-09-05T19:05:12.4999441+08:00 Automatic recovery (2, 55, 0, 44, 3500, 3500)
+2026-09-05T19:05:13.5206891+08:00 Automatic recovery (2, 56, 0, 44, 3500, 3400)

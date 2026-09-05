@@ -40,6 +40,7 @@ namespace LegionFanController.Hardware
 
         public static bool Initialize()
         {
+            if (HardwareAccessPolicy.IsAuditedModernMachine) return false;
             if (_initialized) return true;
 
             try
@@ -180,6 +181,7 @@ namespace LegionFanController.Hardware
 
     internal static class ECUtils
     {
+        internal static readonly object IoLock = new object();
         private const ushort EC_ADDR_PORT = 0x4E;
         private const ushort EC_DATA_PORT = 0x4F;
         private static bool _initialized = false;
@@ -209,7 +211,7 @@ namespace LegionFanController.Hardware
         {
             if (!PawnIODriver.IsInitialized) return 0;
 
-            lock (typeof(ECUtils))
+            lock (IoLock)
             {
                 PawnIODriver.WriteIoPortByte(EC_ADDR_PORT, 0x2E);
                 PawnIODriver.WriteIoPortByte(EC_DATA_PORT, 0x11);
